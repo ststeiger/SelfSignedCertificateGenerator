@@ -9,7 +9,8 @@ namespace SelfSignedCertificateGenerator
 
         public static async System.Threading.Tasks.Task Main(string[] args)
         {
-
+            // chrome://settings/certificates?search=certifi
+            Test();
 
             System.Console.WriteLine(" --- Press any key to continue --- ");
             System.Console.ReadKey();
@@ -43,7 +44,108 @@ namespace SelfSignedCertificateGenerator
             Org.BouncyCastle.X509.X509Certificate sslCertificate = SelfSignSslCertificate(random, rootCertificate, certKeyPair.Public, rootKeyPair.Private);
 
             bool val = CerGenerator.ValidateSelfSignedCert(sslCertificate, rootCertificate.GetPublicKey());
+            
+            
+            // root 
+            // PfxGenerator.CreatePfxFile(@"ca.pfx", caRoot, kp1.Private, null);
+            // CerGenerator.WritePrivatePublicKey("issuer", caCertInfo.IssuerKeyPair);
+            
+            PfxFile.Create(@"obelix.pfx", sslCertificate, certKeyPair.Private, "");
+            CerGenerator.WritePrivatePublicKey("obelix", certKeyPair.Private);
+            
+            System.IO.File.WriteAllText(fileName + "_priv.pem", keyPair.PrivateKey, System.Text.Encoding.ASCII);
+            System.IO.File.WriteAllText(fileName + "_pub.pem", keyPair.PrivateKey, System.Text.Encoding.ASCII);you
+            
+            
+            WriteCerAndCrt(@"ca", rootCertificate);
+            WriteCerAndCrt(@"obelix", sslCertificate);
+            
         } // End Sub Test 
+        
+        
+        public static (string Private, string Public) GetPemKeyPair(Org.BouncyCastle.Crypto.AsymmetricCipherKeyPair keyPair)
+        {
+            string k1 = KeyToString(keyPair.Private);
+            string k2 = KeyToString(keyPair.Public);
+            
+            return new System.ValueTuple<string, string>(k1, k2);
+        }
+
+        public static string KeyToString(Org.BouncyCastle.Crypto.AsymmetricKeyParameter key)
+        {
+            string retValue = null;
+            
+            // id_rsa
+            using (System.IO.TextWriter textWriter = new System.IO.StringWriter())
+            {
+                Org.BouncyCastle.OpenSsl.PemWriter pemWriter = new Org.BouncyCastle.OpenSsl.PemWriter(textWriter);
+                pemWriter.WriteObject(key);
+                pemWriter.Writer.Flush();
+                
+                retValue = textWriter.ToString();
+            } // End Using textWriter 
+
+            return retValue;
+        }
+
+
+
+
+        // Most systems accept both formats, but if you need to you can convert one to the other via openssl 
+        // Certificate file should be PEM-encoded X.509 Certificate file:
+        // openssl x509 -inform DER -in certificate.cer -out certificate.pem
+
+        // Note: The PEM format is the most common format used for certificates. 
+        // Extensions used for PEM certificates are cer, crt, and pem. 
+        // They are Base64 encoded ASCII files.The DER format is the binary form of the certificate. 
+        // DER formatted certificates do not contain the "BEGIN CERTIFICATE/END CERTIFICATE" statements. 
+        // DER formatted certificates most often use the '.der' extension.
+        // Note: 
+        // https://stackoverflow.com/questions/642284/apache-with-ssl-how-to-convert-cer-to-crt-certificates
+        // https://knowledge.digicert.com/solution/SO26449.html
+        // https://info.ssl.com/how-to-der-vs-crt-vs-cer-vs-pem-certificates-and-how-to-conver-them/
+        public static string ToPem(byte[] buf)
+        {
+            string cert_begin = "-----BEGIN CERTIFICATE-----\n";
+            string end_cert = "\n-----END CERTIFICATE-----";
+            string pem = System.Convert.ToBase64String(buf);
+
+            string pemCert = cert_begin + pem + end_cert;
+            return pemCert;
+        } // End Function ToPem 
+        
+
+        
+        public static void WriteCerAndCrt(
+            Org.BouncyCastle.X509.X509Certificate certificate 
+            , string fileName
+        )
+        {
+
+            using (System.IO.Stream fs = System.IO.File.Open(fileName + ".cer", System.IO.FileMode.Create))
+            {
+                byte[] buf = certificate.GetEncoded();
+                fs.Write(buf, 0, buf.Length);
+                fs.Flush();
+            } // End Using fs 
+
+            // new System.Text.ASCIIEncoding(false)
+            // new System.Text.UTF8Encoding(false)
+            using (System.IO.Stream fs = System.IO.File.Open(fileName + ".crt", System.IO.FileMode.Create))
+            {
+                using (System.IO.StreamWriter sw = new System.IO.StreamWriter(fs, System.Text.Encoding.ASCII))
+                {
+                    byte[] buf = certificate.GetEncoded();
+                    string pem = ToPem(buf);
+
+                    sw.Write(pem);
+                    sw.Flush();
+                    fs.Flush();
+                } // End Using sw 
+
+            } // End Using fs 
+        } // End Sub WriteCerAndCrt 
+        
 
 
         // https://stackoverflow.com/questions/51703109/nginx-the-ssl-directive-is-deprecated-use-the-listen-ssl
