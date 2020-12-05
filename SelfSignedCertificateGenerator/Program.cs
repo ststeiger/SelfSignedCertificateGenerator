@@ -63,7 +63,7 @@ namespace SelfSignedCertificateGenerator
 
 
 
-            string pemCert = ToPem(sslCertificate.GetEncoded());
+            string pemCert = ToPem(sslCertificate);
 
             System.ReadOnlySpan<char> certSpan = System.MemoryExtensions.AsSpan(pemCert);
             System.ReadOnlySpan<char> keySpan = System.MemoryExtensions.AsSpan(certKeys.Private);
@@ -108,25 +108,32 @@ namespace SelfSignedCertificateGenerator
 
         // Note: The PEM format is the most common format used for certificates. 
         // Extensions used for PEM certificates are cer, crt, and pem. 
-        // They are Base64 encoded ASCII files.The DER format is the binary form of the certificate. 
+        // They are Base64 encoded ASCII files. The DER format is the binary form of the certificate. 
         // DER formatted certificates do not contain the "BEGIN CERTIFICATE/END CERTIFICATE" statements. 
         // DER formatted certificates most often use the '.der' extension.
         // Note: 
         // https://stackoverflow.com/questions/642284/apache-with-ssl-how-to-convert-cer-to-crt-certificates
         // https://knowledge.digicert.com/solution/SO26449.html
         // https://info.ssl.com/how-to-der-vs-crt-vs-cer-vs-pem-certificates-and-how-to-conver-them/
-        public static string ToPem(byte[] buf)
-        {
+        public static string ToPem(byte[] derEncodedBytes)
+        { 
             string cert_begin = "-----BEGIN CERTIFICATE-----\n";
             string end_cert = "\n-----END CERTIFICATE-----";
-            string pem = System.Convert.ToBase64String(buf);
+            string pem = System.Convert.ToBase64String(derEncodedBytes);
 
             string pemCert = cert_begin + pem + end_cert;
             return pemCert;
         } // End Function ToPem 
-        
 
-        
+
+        public static string ToPem(Org.BouncyCastle.X509.X509Certificate cert)
+        {
+            byte[] buf = cert.GetEncoded();
+            return ToPem(buf);
+        }
+
+
+
         public static void WriteCerAndCrt(
               Org.BouncyCastle.X509.X509Certificate certificate 
             , string fileName
