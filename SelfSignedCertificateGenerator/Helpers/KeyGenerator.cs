@@ -148,9 +148,33 @@ namespace SelfSignedCertificateGenerator
             
             return GenerateEcKeyPair(ecParam, secureRandom);
         } // End Function GenerateEcKeyPair 
-        
-        
+
+
+
+
+        public static Org.BouncyCastle.Crypto.AsymmetricCipherKeyPair GenerateGostKeyPair(string curveName, Org.BouncyCastle.Security.SecureRandom random)
+        {
+            Org.BouncyCastle.Asn1.X9.X9ECParameters ecParam = Org.BouncyCastle.Asn1.Sec.SecNamedCurves.GetByName(curveName);
+
+            if (ecParam == null)
+                ecParam = Org.BouncyCastle.Crypto.EC.CustomNamedCurves.GetByName(curveName);
+
+
+            Org.BouncyCastle.Crypto.Parameters.ECDomainParameters parameters = new Org.BouncyCastle.Crypto.Parameters.ECDomainParameters(ecParam);
+            Org.BouncyCastle.Crypto.Parameters.ECKeyGenerationParameters keyGenerationParameters = new Org.BouncyCastle.Crypto.Parameters.ECKeyGenerationParameters(parameters, random);
+
+            Org.BouncyCastle.Crypto.Generators.ECKeyPairGenerator keygenerator = new Org.BouncyCastle.Crypto.Generators.ECKeyPairGenerator("ECGOST3410");
+            keygenerator.Init(keyGenerationParameters);
+            Org.BouncyCastle.Crypto.AsymmetricCipherKeyPair pair = keygenerator.GenerateKeyPair();
+
+            // Org.BouncyCastle.Crypto.Parameters.ECPrivateKeyParameters validatorPrivate = (Org.BouncyCastle.Crypto.Parameters.ECPrivateKeyParameters)pair.Private;
+            // Org.BouncyCastle.Crypto.Parameters.ECPublicKeyParameters validatorPublic = (Org.BouncyCastle.Crypto.Parameters.ECPublicKeyParameters)pair.Public;
+
+            return pair; 
+        } // End Function GenerateGostKeyPair 
+
+
     } // End Class KeyGenerator 
-    
-    
+
+
 } // End Namespace RedmineMailService.CertSSL 
