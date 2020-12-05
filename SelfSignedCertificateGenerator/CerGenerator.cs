@@ -13,12 +13,7 @@ namespace SelfSignedCertificateGenerator
             // https://github.com/bcgit/bc-csharp/blob/master/crypto/src/crypto/operators/Asn1Signature.cs
             // https://github.com/kerryjiang/BouncyCastle.Crypto/blob/master/Crypto/x509/X509Utilities.cs
             Org.BouncyCastle.Crypto.ISignatureFactory signatureFactory = null;
-            // Org.BouncyCastle.X509.X509Utilities.GetAlgorithmOid("algorithm");
-
-            // new Asn1SignatureFactory("SHA512WITHRSA", issuerKeyPair.Private, rand
-            // erObjectIdentifier sigOid = X509Utilities.GetAlgorithmOid(algorithm);
-            // this.algID = X509Utilities.GetSigAlgID(sigOid, algorithm);
-
+            
             if (privateKey is Org.BouncyCastle.Crypto.Parameters.ECPrivateKeyParameters)
             {
 #if false
@@ -72,14 +67,14 @@ namespace SelfSignedCertificateGenerator
         public static void AddExtensions(Org.BouncyCastle.X509.X509V3CertificateGenerator certificateGenerator
             , CertificateInfo certificateInfo)
         {
-            foreach (System.Collections.Generic.KeyValuePair<string, Org.BouncyCastle.Asn1.Asn1Encodable> kvp
-                     in certificateInfo.CriticalExtensions)
+            foreach (System.Collections.Generic.KeyValuePair<string, Org.BouncyCastle.Asn1.Asn1Encodable> 
+                kvp in certificateInfo.CriticalExtensions)
             {
                 certificateGenerator.AddExtension(kvp.Key, true, kvp.Value);
             } // Next kvp 
 
-            foreach (System.Collections.Generic.KeyValuePair<string, Org.BouncyCastle.Asn1.Asn1Encodable> kvp
-                in certificateInfo.NonCriticalExtensions)
+            foreach (System.Collections.Generic.KeyValuePair<string, Org.BouncyCastle.Asn1.Asn1Encodable> 
+                kvp in certificateInfo.NonCriticalExtensions)
             {
                 certificateGenerator.AddExtension(kvp.Key, false, kvp.Value);
             } // Next kvp 
@@ -144,27 +139,6 @@ namespace SelfSignedCertificateGenerator
             );
 
 
-            // rootCertificate.GetPublicKey():
-            // rootCertificate.GetEncoded()
-            // System.Security.Cryptography.X509Certificates.X509Certificate2 srp = 
-            //    new System.Security.Cryptography.X509Certificates.X509Certificate2(rootCertificate.GetEncoded());
-
-            // srp.PrivateKey
-            // srp.HasPrivateKey
-            // Org.BouncyCastle.Crypto.AsymmetricKeyParameter Akp = Org.BouncyCastle.Security.DotNetUtilities.GetKeyPair(srp.PrivateKey).Private;
-
-            // Org.BouncyCastle.Crypto.IDigest algorithm = Org.BouncyCastle.Security.DigestUtilities.GetDigest(rootCertificate.SigAlgOid);
-            // var signature = new X509Certificate2Signature(cert, algorithm);
-
-            // rootCertificate.SigAlgOid
-            // rootCertificate.GetSignature();
-            // srp.GetRawCertData()
-
-            // X509CertificateParser certParser = new X509CertificateParser();
-            // X509Certificate privateCertBouncy = certParser.ReadCertificate(mycert.GetRawCertData());
-            // AsymmetricKeyParameter pubKey = privateCertBouncy.GetPublicKey();
-
-
             AddExtensions(certificateGenerator, certificateInfo1);
 
             Org.BouncyCastle.Crypto.ISignatureFactory signatureFactory = CreateSignatureFactory(issuerPrivateKey);
@@ -191,8 +165,6 @@ namespace SelfSignedCertificateGenerator
         } // End Function ValidateSelfSignedCert 
 
 
-
-
         public static Org.BouncyCastle.X509.X509Certificate GenerateRootCertificate(
               CertificateInfo certificateInfo
             , Org.BouncyCastle.Security.SecureRandom secureRandom
@@ -214,6 +186,7 @@ namespace SelfSignedCertificateGenerator
             certificateGenerator.SetNotBefore(certificateInfo.ValidFrom);
             certificateGenerator.SetNotAfter(certificateInfo.ValidTo);
 
+            
 
             AddExtensions(certificateGenerator, certificateInfo);
             Org.BouncyCastle.Crypto.ISignatureFactory signatureFactory = CreateSignatureFactory(privateKey);
@@ -270,6 +243,7 @@ namespace SelfSignedCertificateGenerator
                , false
                , authorityKeyIdentifierExtension
            );
+
 
 
 

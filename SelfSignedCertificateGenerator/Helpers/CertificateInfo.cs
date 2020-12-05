@@ -76,7 +76,8 @@ namespace SelfSignedCertificateGenerator
         {
             // Certificate Policies
             // https://stackoverflow.com/questions/12147986/how-to-extract-the-authoritykeyidentifier-from-a-x509certificate2-in-net/12148637
-            var sb = new System.Security.Cryptography.X509Certificates.SubjectAlternativeNameBuilder();
+            System.Security.Cryptography.X509Certificates.SubjectAlternativeNameBuilder sb = 
+                new System.Security.Cryptography.X509Certificates.SubjectAlternativeNameBuilder();
             sb.AddDnsName("example.com");
             sb.AddEmailAddress("webmaster@example.com");
             sb.AddIpAddress(System.Net.IPAddress.Parse("127.0.0.1"));
@@ -101,6 +102,7 @@ namespace SelfSignedCertificateGenerator
             // https://people.eecs.berkeley.edu/~jonah/bc/org/bouncycastle/asn1/x509/X509Name.html
             KeyValuePairList<Org.BouncyCastle.Asn1.DerObjectIdentifier, string> attrs =
                 new KeyValuePairList<Org.BouncyCastle.Asn1.DerObjectIdentifier, string>();
+
 
             if (!string.IsNullOrEmpty(countryIso2Characters) && countryIso2Characters.Trim() != string.Empty)
                 attrs.Add(Org.BouncyCastle.Asn1.X509.X509Name.C, countryIso2Characters);
@@ -171,18 +173,15 @@ namespace SelfSignedCertificateGenerator
         } // End Sub AddAlternativeNames 
 
 
-        public void AddExtension(string oid, bool critical, Org.BouncyCastle.Asn1.Asn1Encodable extensionValue)
+        public void AddExtension(
+              string oid
+            , bool critical
+            , Org.BouncyCastle.Asn1.Asn1Encodable extensionValue)
         {
             if (critical)
                 this.CriticalExtensions.Add(oid, extensionValue);
             else
                 this.NonCriticalExtensions.Add(oid, extensionValue);
-
-            //certGenerator.AddExtension(
-            //              Org.BouncyCastle.Asn1.X509.X509Extensions.SubjectAlternativeName
-            //            , false
-            //            , subjectAlternativeNames
-            //        );
         } // End Sub AddExtension 
 
 

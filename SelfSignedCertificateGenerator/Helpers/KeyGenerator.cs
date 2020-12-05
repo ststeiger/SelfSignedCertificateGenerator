@@ -7,13 +7,6 @@ namespace SelfSignedCertificateGenerator
     {
         
         
-        public static void foo()
-        {
-            Org.BouncyCastle.Crypto.IAsymmetricCipherKeyPairGenerator gen = 
-                Org.BouncyCastle.Security.GeneratorUtilities.GetKeyPairGenerator("");
-        }
-        
-        
         public static Org.BouncyCastle.Crypto.AsymmetricCipherKeyPair GenerateGostKeyPair(
             int length
            , Org.BouncyCastle.Security.SecureRandom secureRandom

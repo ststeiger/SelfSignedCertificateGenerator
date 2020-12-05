@@ -1,12 +1,19 @@
 
 namespace SelfSignedCertificateGenerator
 {
-    
-    
+
+
+    public class PfxData
+    {
+        public Org.BouncyCastle.X509.X509Certificate Certificate;
+        public Org.BouncyCastle.Crypto.AsymmetricKeyParameter PrivateKey;
+    }
+
+
     public class PfxFile
     {
-        
-        
+
+
         // System.Security.Cryptography.X509Certificates.X509Certificate2.Import (string fileName);
 
         // https://docs.microsoft.com/en-us/dotnet/api/system.security.cryptography.x509certificates.x509certificate2.import?view=netframework-4.7.2
@@ -21,122 +28,120 @@ namespace SelfSignedCertificateGenerator
               , string password = "")
         {
             // create certificate entry
-            Org.BouncyCastle.Pkcs.X509CertificateEntry certEntry = 
+            Org.BouncyCastle.Pkcs.X509CertificateEntry certEntry =
                 new Org.BouncyCastle.Pkcs.X509CertificateEntry(certificate);
             string friendlyName = certificate.SubjectDN.ToString();
-            
-            
-            
+
+            if (!friendlyName.Contains("obelix", System.StringComparison.InvariantCultureIgnoreCase))
+                friendlyName = "Skynet Certification Authority";
+            else
+                friendlyName = "Coopérative Ménhir Obelix Gmbh & Co. KGaA";
+
+
             // get bytes of private key.
             Org.BouncyCastle.Asn1.Pkcs.PrivateKeyInfo keyInfo = Org.BouncyCastle.Pkcs.PrivateKeyInfoFactory.CreatePrivateKeyInfo(privateKey);
             //byte[] keyBytes = keyInfo.ToAsn1Object().GetEncoded();
-            
+
             Org.BouncyCastle.Pkcs.Pkcs12StoreBuilder builder = new Org.BouncyCastle.Pkcs.Pkcs12StoreBuilder();
             builder.SetUseDerEncoding(true);
-            
-            
-            
+
+
+
             Org.BouncyCastle.Pkcs.Pkcs12Store store = builder.Build();
-            
+
             store.SetCertificateEntry(friendlyName, certEntry);
-            
+
             // create store entry
             store.SetKeyEntry(
                   //keyFriendlyName
                   friendlyName
                 , new Org.BouncyCastle.Pkcs.AsymmetricKeyEntry(privateKey)
-                , new Org.BouncyCastle.Pkcs.X509CertificateEntry[] {certEntry}
+                , new Org.BouncyCastle.Pkcs.X509CertificateEntry[] { certEntry }
             );
-            
-            
+
+
             byte[] pfxBytes = null;
-            
+
             using (System.IO.MemoryStream stream = new System.IO.MemoryStream())
             {
                 // Cert is contained in store
                 // null: no password, "": an empty passwords
                 // note: Linux needs empty password on null...
-                store.Save(stream, password == null ? "".ToCharArray(): password.ToCharArray(), new Org.BouncyCastle.Security.SecureRandom());
+                store.Save(stream, password == null ? "".ToCharArray() : password.ToCharArray(), new Org.BouncyCastle.Security.SecureRandom());
                 // stream.Position = 0;
                 pfxBytes = stream.ToArray();
             } // End Using stream 
-            
-            
-#if WITH_MS_PFX 
+
+
+#if WITH_MS_PFX
             WithMsPfx(pfxBytes, fileName, password);
 #else
             byte[] result = Org.BouncyCastle.Pkcs.Pkcs12Utilities.ConvertToDefiniteLength(pfxBytes);
             // this.StoreCertificate(System.Convert.ToBase64String(result));
-            
+
             using (System.IO.BinaryWriter writer = new System.IO.BinaryWriter(System.IO.File.Open(fileName, System.IO.FileMode.Create)))
             {
                 writer.Write(result);
             } // End Using writer 
 #endif
-            
+
         } // End Sub Create
-        
-        
+
+
         private static void WithMsPfx(byte[] pfxBytes, string fileName, string password)
         {
             System.Security.Cryptography.X509Certificates.X509Certificate2 convertedCertificate =
                 new System.Security.Cryptography.X509Certificates.X509Certificate2(pfxBytes,
                     "", // PW
                     System.Security.Cryptography.X509Certificates.X509KeyStorageFlags.PersistKeySet | System.Security.Cryptography.X509Certificates.X509KeyStorageFlags.Exportable);
-            
+
             byte[] bytes = convertedCertificate.Export(System.Security.Cryptography.X509Certificates.X509ContentType.Pfx, password);
             System.IO.File.WriteAllBytes(fileName, bytes);
         } // End Sub WithMsPfx 
 
-        
-        
-        public static void Read(string pfxFilePath, string password = "" )
+
+
+        public static PfxData Read(string pfxFilePath, string password = "")
         {
             Org.BouncyCastle.Pkcs.Pkcs12Store store = null;
-            
+
             using (System.IO.Stream pfxStream = System.IO.File.OpenRead(pfxFilePath))
             {
                 store = new Org.BouncyCastle.Pkcs.Pkcs12Store(pfxStream, password.ToCharArray());
             }
-            
+
             // System.Console.WriteLine(store);
-            
+
+
             foreach (string alias in store.Aliases)
             {
-                // System.Console.WriteLine(alias);
+                Org.BouncyCastle.Pkcs.X509CertificateEntry certEntry = store.GetCertificate(alias);
+                Org.BouncyCastle.X509.X509Certificate cert = certEntry.Certificate;
+
+                // Org.BouncyCastle.Crypto.AsymmetricKeyParameter publicKey = cert.GetPublicKey();
+                // System.Console.WriteLine(publicKey);
 
                 // https://7thzero.com/blog/bouncy-castle-convert-a-bouncycastle-asymmetrickeyentry-to-a-.ne
                 if (store.IsKeyEntry(alias))
                 {
                     Org.BouncyCastle.Pkcs.AsymmetricKeyEntry keyEntry = store.GetKey(alias);
-                    System.Console.WriteLine(keyEntry);
                     Org.BouncyCastle.Crypto.AsymmetricKeyParameter privateKey = keyEntry.Key;
-                    System.Console.WriteLine(privateKey.IsPrivate);
+
+                    if (privateKey.IsPrivate)
+                        return new PfxData() 
+                               { 
+                                   Certificate = cert, 
+                                   PrivateKey = privateKey 
+                               };
                 } // End if (store.IsKeyEntry((string)alias))
 
-
-                Org.BouncyCastle.Pkcs.X509CertificateEntry certEntry = store.GetCertificate(alias);
-                Org.BouncyCastle.X509.X509Certificate cert = certEntry.Certificate;
-                System.Console.WriteLine(cert);
-
-                Org.BouncyCastle.Crypto.AsymmetricKeyParameter publicKey = cert.GetPublicKey();
-                System.Console.WriteLine(publicKey);
-
-
-
-                System.Security.Cryptography.X509Certificates.X509Certificate2 cert2 = new System.Security.Cryptography.X509Certificates.X509Certificate2(pfxFilePath);
-                
-                if (cert2.HasPrivateKey)
-                {
-                    System.Console.WriteLine(cert2.PrivateKey);
-                }
-
             } // Next alias 
-            
+
+            return null;
         } // End Sub Read
-        
-        
+
+
     }
-    
-    
+
+
 }
