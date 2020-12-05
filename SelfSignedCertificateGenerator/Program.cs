@@ -2,6 +2,78 @@
 namespace SelfSignedCertificateGenerator
 {
 
+    /*
+     
+    C:\Windows\System32\drivers\etc\hosts
+
+
+127.0.0.1       cor-management.com
+127.0.0.1       example.int
+127.0.0.1       foo.int
+127.0.0.1       bar.int
+127.0.0.1       foobar.int
+
+127.0.0.1       de.example.int
+127.0.0.1       fr.example.int
+127.0.0.1       it.example.int
+127.0.0.1       en.example.int
+
+
+
+"sql.guru", "*.sql.guru", "example.int"
+, "foo.int", "bar.int", "foobar.int"
+, "*.com") ;
+
+
+https://stackoverflow.com/questions/54086555/asp-net-core-2-1-usehttpsredirection-not-working-in-iis
+
+The issue I found was that a change from .net core 2.0 to .net core 2.1 
+meant that the https port needed to be specified explicitly in startup.cs
+
+services.AddHttpsRedirection(options =>
+    {
+        options.HttpsPort = 443;
+    });
+
+
+// double-click pxf add as trusted root certificate 
+// inetmgr.exe
+// (on machine) => server certificates 
+    // - add root certificate and site ssl certificate 
+    // on website => bindings add ssl certificate
+// one SSL-application PER APPLICATION-POOL
+
+// Sharing an app pool among apps isn't supported. Use one app pool per app.
+// https://docs.microsoft.com/en-us/aspnet/core/host-and-deploy/iis/in-process-hosting?view=aspnetcore-5.0
+// https://stackoverflow.com/questions/55673395/mvc-core-what-is-the-difference-between-useiis-and-useiisintegration
+// https://weblog.west-wind.com/posts/2019/Mar/16/ASPNET-Core-Hosting-on-IIS-with-ASPNET-Core-22#outofprocess-or-inprocess-use-inprocess
+// .csproj file ==>
+<PropertyGroup>
+    <TargetFramework>netcoreapp2.2</TargetFramework>
+    <AspNetCoreHostingModel>InProcess</AspNetCoreHostingModel>
+</PropertyGroup>
+
+
+
+
+http://example.int/TestApplicationHttp
+https://example.int/TestApplicationHttp
+
+
+http://example.int/TestApplicationHttps
+https://example.int/TestApplicationHttps
+
+     */
+
+
+    // https://www.selfsignedcertificate.com/
+    // https://askubuntu.com/questions/73287/how-do-i-install-a-root-certificate
+    // https://www.digicert.com/kb/csr-ssl-installation/nginx-openssl.htm
+    // https://serverfault.com/questions/10854/nginx-https-serving-with-same-config-as-http
+    // https://nginx.org/en/docs/http/configuring_https_servers.html#single_http_https_server
+    // https://www.thesslstore.com/knowledgebase/ssl-install/nginx-ssl-installation/
+    // https://www.digitalocean.com/community/tutorials/how-to-secure-nginx-with-let-s-encrypt-on-ubuntu-18-04
+    // https://www.digitalocean.com/community/tutorials/how-to-create-a-self-signed-ssl-certificate-for-nginx-in-ubuntu-18-04
 
     public class Program
     {
@@ -9,6 +81,9 @@ namespace SelfSignedCertificateGenerator
 
         public static async System.Threading.Tasks.Task Main(string[] args)
         {
+            // 1. Root certificate to pfx 
+            // 2. Read root certificate 
+            // 3. Sign SSL certificate
 
             // chrome://settings/certificates?search=certifi
             Test();

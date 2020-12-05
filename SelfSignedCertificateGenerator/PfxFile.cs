@@ -141,6 +141,19 @@ namespace SelfSignedCertificateGenerator
         } // End Sub Read
 
 
+        public static System.Security.Cryptography.X509Certificates.X509Certificate2 
+            MicrosoftCertificateFromPfx(string pfxFilePath, string password = "")
+        {
+            System.Security.Cryptography.X509Certificates.X509Certificate2 cert =
+                  new System.Security.Cryptography.X509Certificates.X509Certificate2(
+                  pfxFilePath
+                , password
+            );
+
+            return cert;
+        }
+
+
     }
 
 
