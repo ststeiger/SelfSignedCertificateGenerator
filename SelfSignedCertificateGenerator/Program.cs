@@ -44,34 +44,45 @@ namespace SelfSignedCertificateGenerator
             Org.BouncyCastle.X509.X509Certificate sslCertificate = SelfSignSslCertificate(random, rootCertificate, certKeyPair.Public, rootKeyPair.Private);
 
             bool val = CerGenerator.ValidateSelfSignedCert(sslCertificate, rootCertificate.GetPublicKey());
-            
-            
+
+
             // root 
-            // PfxGenerator.CreatePfxFile(@"ca.pfx", caRoot, kp1.Private, null);
-            // CerGenerator.WritePrivatePublicKey("issuer", caCertInfo.IssuerKeyPair);
-            
+            (string Private, string Public) rootKeys = KeyPairToPem(rootKeyPair);
+            PfxFile.Create(@"obelix.pfx", rootCertificate, rootKeyPair.Private, "");
+            WriteCerAndCrt(rootCertificate, @"ca");
+            System.IO.File.WriteAllText(@"ca_private.key", rootKeys.Private, System.Text.Encoding.ASCII);
+            // System.IO.File.WriteAllText(@"ca_public.key", rootKeys.Public, System.Text.Encoding.ASCII);
+
+
+            // SSL 
+            (string Private, string Public) certKeys = KeyPairToPem(certKeyPair);
             PfxFile.Create(@"obelix.pfx", sslCertificate, certKeyPair.Private, "");
-            CerGenerator.WritePrivatePublicKey("obelix", certKeyPair.Private);
-            
-            System.IO.File.WriteAllText(fileName + "_priv.pem", keyPair.PrivateKey, System.Text.Encoding.ASCII);
-            System.IO.File.WriteAllText(fileName + "_pub.pem", keyPair.PrivateKey, System.Text.Encoding.ASCII);you
-            
-            
-            WriteCerAndCrt(@"ca", rootCertificate);
-            WriteCerAndCrt(@"obelix", sslCertificate);
-            
+            WriteCerAndCrt(sslCertificate, @"obelix");
+            System.IO.File.WriteAllText(@"obelix.key", certKeys.Private, System.Text.Encoding.ASCII);
+            // System.IO.File.WriteAllText(@"obelix_public.key", certKeys.Public, System.Text.Encoding.ASCII);
+
+
+
+            string pemCert = ToPem(sslCertificate.GetEncoded());
+
+            System.ReadOnlySpan<char> certSpan = System.MemoryExtensions.AsSpan(pemCert);
+            System.ReadOnlySpan<char> keySpan = System.MemoryExtensions.AsSpan(certKeys.Private);
+
+            System.Security.Cryptography.X509Certificates.X509Certificate2 certSslLoaded = System.Security.Cryptography.X509Certificates.X509Certificate2.CreateFromPem(certSpan, keySpan);
+            System.Console.WriteLine(sslCertificate);
+            System.Console.WriteLine(certSslLoaded);
         } // End Sub Test 
         
         
-        public static (string Private, string Public) GetPemKeyPair(Org.BouncyCastle.Crypto.AsymmetricCipherKeyPair keyPair)
+        public static (string Private, string Public) KeyPairToPem(Org.BouncyCastle.Crypto.AsymmetricCipherKeyPair keyPair)
         {
-            string k1 = KeyToString(keyPair.Private);
-            string k2 = KeyToString(keyPair.Public);
+            string k1 = KeyToPemString(keyPair.Private);
+            string k2 = KeyToPemString(keyPair.Public);
             
             return new System.ValueTuple<string, string>(k1, k2);
         }
 
-        public static string KeyToString(Org.BouncyCastle.Crypto.AsymmetricKeyParameter key)
+        public static string KeyToPemString(Org.BouncyCastle.Crypto.AsymmetricKeyParameter key)
         {
             string retValue = null;
             
@@ -117,7 +128,7 @@ namespace SelfSignedCertificateGenerator
 
         
         public static void WriteCerAndCrt(
-            Org.BouncyCastle.X509.X509Certificate certificate 
+              Org.BouncyCastle.X509.X509Certificate certificate 
             , string fileName
         )
         {
