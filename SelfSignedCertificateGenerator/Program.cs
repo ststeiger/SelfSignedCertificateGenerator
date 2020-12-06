@@ -101,6 +101,8 @@ https://example.int/TestApplicationHttps
             // 3. Sign SSL certificate
 
             // chrome://settings/certificates?search=certifi
+
+            // https://serverfault.com/questions/9708/what-is-a-pem-file-and-how-does-it-differ-from-other-openssl-generated-key-file
             // PfxData pfx = GenerateRootCertificate(random);
             PfxData pfx = PfxFile.Read("skynet.pfx");
 
