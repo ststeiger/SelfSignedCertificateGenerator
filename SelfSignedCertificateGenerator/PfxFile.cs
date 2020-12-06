@@ -7,6 +7,21 @@ namespace SelfSignedCertificateGenerator
     {
         public Org.BouncyCastle.X509.X509Certificate Certificate;
         public Org.BouncyCastle.Crypto.AsymmetricKeyParameter PrivateKey;
+
+
+        public PfxData(
+            Org.BouncyCastle.X509.X509Certificate certificate, 
+            Org.BouncyCastle.Crypto.AsymmetricKeyParameter privateKey)
+        {
+            this.Certificate = certificate;
+            this.PrivateKey = privateKey;
+        }
+
+
+        public PfxData()
+        { }
+
+
     }
 
 

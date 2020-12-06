@@ -92,52 +92,38 @@ https://example.int/TestApplicationHttps
         // ok this activated my paranoia.
         // Announcing Let’s Decrypt, A SSL Certificate Authority Backed By The NSA < It’s totes secure. Promise.
         public static async System.Threading.Tasks.Task Main(string[] args)
-        {   
+        {
+            Org.BouncyCastle.Security.SecureRandom random = new Org.BouncyCastle.Security.SecureRandom(NonBackdooredPrng.Create());
+
+
             // 1. Root certificate to pfx 
             // 2. Read root certificate 
             // 3. Sign SSL certificate
 
             // chrome://settings/certificates?search=certifi
-            Test();
+            // PfxData pfx = GenerateRootCertificate(random);
+            PfxData pfx = PfxFile.Read("skynet.pfx");
+
+            GenerateSslCertificate(pfx, random);
 
             System.Console.WriteLine(" --- Press any key to continue --- ");
             System.Console.ReadKey();
-
+            
             await System.Threading.Tasks.Task.CompletedTask;
         }
 
 
 
-
-        public static void Test()
+        public static PfxData GenerateRootCertificate(Org.BouncyCastle.Security.SecureRandom random)
         {
-            Org.BouncyCastle.Security.SecureRandom random = new Org.BouncyCastle.Security.SecureRandom(NonBackdooredPrng.Create());
-
-
+            // string curveName = "curve25519"; curveName = "secp256k1";
             // Org.BouncyCastle.Crypto.AsymmetricCipherKeyPair rootKeyPair = KeyGenerator.GenerateEcKeyPair(curveName, random);
             Org.BouncyCastle.Crypto.AsymmetricCipherKeyPair rootKeyPair = KeyGenerator.GenerateRsaKeyPair(2048, random);
             // Org.BouncyCastle.Crypto.AsymmetricCipherKeyPair rootKeyPair = KeyGenerator.GenerateDsaKeyPair(1024, random);
             // Org.BouncyCastle.Crypto.AsymmetricCipherKeyPair rootKeyPair = KeyGenerator.GenerateDHKeyPair(1024, random);
             // Org.BouncyCastle.Crypto.AsymmetricCipherKeyPair rootKeyPair = KeyGenerator.GenerateGostKeyPair(4096, random);
 
-
             Org.BouncyCastle.X509.X509Certificate rootCertificate = GenerateRootCertificate(rootKeyPair, random);
-
-
-            string curveName = "curve25519"; curveName = "secp256k1";
-            // IIS does not support Elliptic Curve...
-            // Org.BouncyCastle.Crypto.AsymmetricCipherKeyPair certKeyPair = KeyGenerator.GenerateEcKeyPair(curveName, random);
-            Org.BouncyCastle.Crypto.AsymmetricCipherKeyPair certKeyPair = KeyGenerator.GenerateRsaKeyPair(2048, random);
-            // Org.BouncyCastle.Crypto.AsymmetricCipherKeyPair certKeyPair = KeyGenerator.GenerateDsaKeyPair(1024, random);
-            // Org.BouncyCastle.Crypto.AsymmetricCipherKeyPair certKeyPair = KeyGenerator.GenerateDHKeyPair(1024, random);
-            // Org.BouncyCastle.Crypto.AsymmetricCipherKeyPair certKeyPair = KeyGenerator.GenerateGostKeyPair(4096, random);
-
-
-
-            Org.BouncyCastle.X509.X509Certificate sslCertificate = SelfSignSslCertificate(random, rootCertificate, certKeyPair.Public, rootKeyPair.Private);
-
-            bool val = CerGenerator.ValidateSelfSignedCert(sslCertificate, rootCertificate.GetPublicKey());
-
 
             // root 
             (string Private, string Public) rootKeys = KeyPairToPem(rootKeyPair);
@@ -147,6 +133,28 @@ https://example.int/TestApplicationHttps
             // System.IO.File.WriteAllText(@"ca_public.key", rootKeys.Public, System.Text.Encoding.ASCII);
 
 
+            return new PfxData(rootCertificate, rootKeyPair.Private);
+        }
+
+
+        public static void GenerateSslCertificate(PfxData pfx, Org.BouncyCastle.Security.SecureRandom random)
+        {
+            string curveName = "curve25519"; curveName = "secp256k1";
+            // IIS does not support Elliptic Curve...
+            // Org.BouncyCastle.Crypto.AsymmetricCipherKeyPair certKeyPair = KeyGenerator.GenerateEcKeyPair(curveName, random);
+            Org.BouncyCastle.Crypto.AsymmetricCipherKeyPair certKeyPair = KeyGenerator.GenerateRsaKeyPair(2048, random);
+            // Org.BouncyCastle.Crypto.AsymmetricCipherKeyPair certKeyPair = KeyGenerator.GenerateDsaKeyPair(1024, random);
+            // Org.BouncyCastle.Crypto.AsymmetricCipherKeyPair certKeyPair = KeyGenerator.GenerateDHKeyPair(1024, random);
+            // Org.BouncyCastle.Crypto.AsymmetricCipherKeyPair certKeyPair = KeyGenerator.GenerateGostKeyPair(4096, random);
+
+            
+
+            Org.BouncyCastle.X509.X509Certificate sslCertificate = SelfSignSslCertificate(random, pfx.Certificate, certKeyPair.Public, pfx.PrivateKey);
+
+            bool val = CerGenerator.ValidateSelfSignedCert(sslCertificate, pfx.Certificate.GetPublicKey());
+
+
+
             // SSL 
             (string Private, string Public) certKeys = KeyPairToPem(certKeyPair);
             PfxFile.Create(@"obelix.pfx", sslCertificate, certKeyPair.Private, "");
@@ -154,10 +162,19 @@ https://example.int/TestApplicationHttps
             System.IO.File.WriteAllText(@"obelix_private.key", certKeys.Private, System.Text.Encoding.ASCII);
             // System.IO.File.WriteAllText(@"obelix_public.key", certKeys.Public, System.Text.Encoding.ASCII);
 
-
-
             string pemCert = ToPem(sslCertificate);
             System.IO.File.WriteAllText(@"obelix.pem", pemCert, System.Text.Encoding.ASCII);
+        } // End Sub GenerateSslCertificate 
+
+
+        public static void Test(
+            Org.BouncyCastle.X509.X509Certificate sslCertificate,
+            Org.BouncyCastle.Crypto.AsymmetricCipherKeyPair sslCertificateKeyPair
+            )
+        {
+            string pemCert = ToPem(sslCertificate);
+            // SSL 
+            (string Private, string Public) certKeys = KeyPairToPem(sslCertificateKeyPair);
 
             System.ReadOnlySpan<char> certSpan = System.MemoryExtensions.AsSpan(pemCert);
             System.ReadOnlySpan<char> keySpan = System.MemoryExtensions.AsSpan(certKeys.Private);
@@ -165,22 +182,15 @@ https://example.int/TestApplicationHttps
             System.Security.Cryptography.X509Certificates.X509Certificate2 certSslLoaded = System.Security.Cryptography.X509Certificates.X509Certificate2.CreateFromPem(certSpan, keySpan);
             System.Console.WriteLine(sslCertificate);
             System.Console.WriteLine(certSslLoaded);
+
             Org.BouncyCastle.X509.X509Certificate certly = Org.BouncyCastle.Security.DotNetUtilities.FromX509Certificate(certSslLoaded);
-            bool b = certly.Equals(rootCertificate);
-            System.Console.WriteLine(b);
+            // bool b = certly.Equals(rootCertificate);
+            // System.Console.WriteLine(b);
 
             // certly.GetPublicKey()
 
-
             Org.BouncyCastle.X509.X509Certificate cert = ReadCertificate("obelix.pem");
             System.Console.WriteLine(cert);
-
-
-            PfxData pfx = PfxFile.Read("obelix.pfx");
-
-            System.Console.WriteLine(pfx.Certificate);
-            System.Console.WriteLine(pfx.PrivateKey);
-            
         } // End Sub Test 
 
 
