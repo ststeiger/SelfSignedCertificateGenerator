@@ -75,12 +75,24 @@ https://example.int/TestApplicationHttps
     // https://www.digitalocean.com/community/tutorials/how-to-secure-nginx-with-let-s-encrypt-on-ubuntu-18-04
     // https://www.digitalocean.com/community/tutorials/how-to-create-a-self-signed-ssl-certificate-for-nginx-in-ubuntu-18-04
 
+    
+    // https://www.digicert.com/easy-csr/openssl.htm
+    // https://www.digitalocean.com/community/tutorials/how-to-create-a-self-signed-ssl-certificate-for-nginx-in-ubuntu-16-04
+    // https://www.digicert.com/kb/csr-ssl-installation/nginx-openssl.htm
+    // https://phoenixnap.com/kb/install-ssl-certificate-nginx
+    
     public class Program
     {
 
-
+        
+        // https://twitter.com/HackerNewsOnion/status/740228588520247296?lang=en
+        // Announcing Let’s Decrypt, A SSL Certificate Authority Backed By The NSA
+        
+        // Talk about throwing a skunk in the jury pool! I feel like now we need proof this is fiction!
+        // ok this activated my paranoia.
+        // Announcing Let’s Decrypt, A SSL Certificate Authority Backed By The NSA < It’s totes secure. Promise.
         public static async System.Threading.Tasks.Task Main(string[] args)
-        {
+        {   
             // 1. Root certificate to pfx 
             // 2. Read root certificate 
             // 3. Sign SSL certificate

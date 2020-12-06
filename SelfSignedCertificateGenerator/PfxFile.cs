@@ -35,7 +35,7 @@ namespace SelfSignedCertificateGenerator
             if (!friendlyName.Contains("obelix", System.StringComparison.InvariantCultureIgnoreCase))
                 friendlyName = "Skynet Certification Authority";
             else
-                friendlyName = "Coopérative Ménhir Obelix Gmbh & Co. KGaA";
+                friendlyName = "CoopÃ©rative MÃ©nhir Obelix Gmbh & Co. KGaA";
 
 
             // get bytes of private key.
