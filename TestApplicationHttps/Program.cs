@@ -27,7 +27,8 @@ namespace TestApplicationHttps
         public static void Main(string[] args)
         {
             // ln -s /etc/nginx/sites-available/example.int example.int
-            
+            // cat cert.pem ca.pem > fullchain.pem
+            // cat ./obelix.pem ./../skynet/skynet.crt > fullchain.pem
             using (System.IO.FileSystemWatcher watcher = new System.IO.FileSystemWatcher())
             {
                 // listenOptions.UseHttps("testCert.pfx", "testPassword");                                
@@ -41,7 +42,6 @@ namespace TestApplicationHttps
             } // End Using watcher 
 
         } // End Sub Main 
-
 
 
         // https://github.com/dotnet/aspnetcore/discussions/28238
@@ -91,13 +91,13 @@ namespace TestApplicationHttps
                         // https://developers.redhat.com/blog/2018/07/24/improv-net-core-kestrel-performance-linux/
                         // webBuilder.UseLinuxTransport();
 
-                        /*
+                        
                         if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows))
                         {
                             webBuilder.UseIISIntegration();
                         }
                         else webBuilder.UseKestrel();
-                        */
+                        
 
                         webBuilder.UseStartup<Startup>()
                         // .UseApplicationInsights()

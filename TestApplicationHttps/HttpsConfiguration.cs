@@ -12,6 +12,7 @@ namespace TestApplicationHttps.Configuration.Kestrel
 
         public static void HttpsDefaults(Microsoft.AspNetCore.Server.Kestrel.Https.HttpsConnectionAdapterOptions listenOptions)
         {
+            /*
             listenOptions.OnAuthenticate =
                 delegate (Microsoft.AspNetCore.Connections.ConnectionContext connectionContext, System.Net.Security.SslServerAuthenticationOptions sslOptions)
                 {
@@ -25,7 +26,7 @@ namespace TestApplicationHttps.Configuration.Kestrel
                            });
                 }
             ; // End OnAuthenticate 
-
+            */
         }
 
         public static void CertificateFileChanged(
@@ -47,9 +48,15 @@ namespace TestApplicationHttps.Configuration.Kestrel
         {
             System.Security.Cryptography.X509Certificates.X509Certificate2 cert;
 
-            if (certs.Count > 0)
+            if (certs != null && certs.Count > 0)
             {
-                return certs.GetEnumerator().Current.Value;
+                // return certs.GetEnumerator().Current.Value;
+                // return System.Linq.Enumerable.FirstOrDefault(certs);
+                foreach (var thisCert  in certs)
+                {
+                    System.Console.WriteLine("SNI Name: {0}", name);
+                    return thisCert.Value;
+                }
             }
 
 
@@ -108,6 +115,23 @@ namespace TestApplicationHttps.Configuration.Kestrel
 
         } // End Sub ListenAnyIP 
 
+        
+
+        public static System.Security.Cryptography.X509Certificates.X509Certificate2 GetCert()
+        {
+            string cert = SecretManager.GetSecret<string>("ssl_cert");
+            string key = SecretManager.GetSecret<string>("ssl_key");
+
+            System.ReadOnlySpan<char> certSpan = System.MemoryExtensions.AsSpan(cert);
+            System.ReadOnlySpan<char> keySpan = System.MemoryExtensions.AsSpan(key);
+
+
+            System.Security.Cryptography.X509Certificates.X509Certificate2 certSslLoaded = System.Security.Cryptography.X509Certificates.X509Certificate2.CreateFromPem(certSpan, keySpan);
+            return certSslLoaded;
+        }
+
+        
+        
         public static void UseHttps(
               System.Collections.Concurrent.ConcurrentDictionary<string, System.Security.Cryptography.X509Certificates.X509Certificate2> certs
             , Microsoft.AspNetCore.Server.Kestrel.Https.HttpsConnectionAdapterOptions httpsOptions)
@@ -129,16 +153,8 @@ namespace TestApplicationHttps.Configuration.Kestrel
             certs["example.com"] = exampleCert;
             certs["sub.example.com"] = subExampleCert;
             */
-
-            string cert = SecretManager.GetSecret<string>("ssl_cert");
-            string key = SecretManager.GetSecret<string>("ssl_key");
-
-            System.ReadOnlySpan<char> certSpan = System.MemoryExtensions.AsSpan(cert);
-            System.ReadOnlySpan<char> keySpan = System.MemoryExtensions.AsSpan(key);
-
-
-            System.Security.Cryptography.X509Certificates.X509Certificate2 certSslLoaded = System.Security.Cryptography.X509Certificates.X509Certificate2.CreateFromPem(certSpan, keySpan);
-
+            
+            System.Security.Cryptography.X509Certificates.X509Certificate2 certSslLoaded = GetCert();
 
             certs["localhost"] = certSslLoaded;
             httpsOptions.ServerCertificateSelector =
