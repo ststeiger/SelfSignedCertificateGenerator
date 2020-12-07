@@ -90,6 +90,8 @@ namespace TestApplicationHttps
                         ); // End ConfigureKestrel 
 #endif
 
+                        // webBuilder.UseUrls("");
+
                         // https://developers.redhat.com/blog/2018/07/24/improv-net-core-kestrel-performance-linux/
                         webBuilder.UseLinuxTransport();
 

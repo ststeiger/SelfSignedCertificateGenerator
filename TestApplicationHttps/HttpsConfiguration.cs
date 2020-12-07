@@ -108,6 +108,7 @@ namespace TestApplicationHttps.Configuration.Kestrel
 
 
             listenOptions.UseHttps(
+
                 delegate (Microsoft.AspNetCore.Server.Kestrel.Https.HttpsConnectionAdapterOptions httpsOptions)
                 {
                     UseHttps(certs, httpsOptions);
@@ -119,6 +120,7 @@ namespace TestApplicationHttps.Configuration.Kestrel
                         };
 
                 }
+
             ); // End ListenOptions.UseHttps
 
         } // End Sub ListenAnyIP 
