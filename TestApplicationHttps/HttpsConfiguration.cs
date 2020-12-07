@@ -9,15 +9,17 @@ namespace TestApplicationHttps.Configuration.Kestrel
     public class CertHackStore
     {
 
-        internal System.Security.Cryptography.X509Certificates.X509Certificate2 Certificate;
+        protected bool m_isNotWindows;
+        protected System.Security.Cryptography.X509Certificates.X509Certificate2 m_certificate;
         protected byte[] m_bkcs12Bytes;
 
 
         internal CertHackStore(System.Security.Cryptography.X509Certificates.X509Certificate2 cert)
         {
-            this.Certificate = cert;
+            this.m_isNotWindows = !System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows);
+            this.m_certificate = cert;
             this.m_bkcs12Bytes = cert.Export(System.Security.Cryptography.X509Certificates.X509ContentType.Pkcs12);
-        }
+        } // End Constructor 
 
 
         // Hack for 2017 Windoze Bug "No credentials are available in the security package" 
@@ -28,10 +30,24 @@ namespace TestApplicationHttps.Configuration.Kestrel
             {
                 return new System.Security.Cryptography.X509Certificates.X509Certificate2(this.m_bkcs12Bytes);
             }
-        }
-        
-        
-    }
+        } // End Property NewCertificate 
+
+
+        public System.Security.Cryptography.X509Certificates.X509Certificate2 Certificate
+        {
+            get
+            {
+                if (this.m_isNotWindows)
+                    return this.m_certificate;
+
+                // Hack for 2017 Windoze Bug "No credentials are available in the security package" 
+                // SslStream is not working with ephemeral keys ... 
+                return this.NewCertificate;
+            }
+        } // End Property Certificate 
+
+
+    } // End Class CertHackStore
 
 
     public static class Https
@@ -56,8 +72,9 @@ namespace TestApplicationHttps.Configuration.Kestrel
 
                 }
             ; // End OnAuthenticate 
-            
-        }
+
+        } // End Sub HttpsDefaults 
+
 
         public static void CertificateFileChanged(
               System.Collections.Concurrent.ConcurrentDictionary<string, CertHackStore> certs
@@ -68,26 +85,10 @@ namespace TestApplicationHttps.Configuration.Kestrel
             System.Console.WriteLine(e.FullPath.ToString() + " is changed!");
             // TODO: Swap certificate...
             // certs["localhost"] = localhostCert;
-        }
-
-        private static bool? s_isNotWindows;
-        
-        public static bool IsNotWindows
-        {
-            get
-            {
-                if (s_isNotWindows.HasValue)
-                    return s_isNotWindows.Value;
-                
-                s_isNotWindows = !System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows);
-                return s_isNotWindows.Value;
-            }
-        }
+        } // End Sub CertificateFileChanged 
 
 
-
-        public static System.Security.Cryptography.X509Certificates.X509Certificate2 
-            ServerCertificateSelector(
+        public static System.Security.Cryptography.X509Certificates.X509Certificate2 ServerCertificateSelector(
               System.Collections.Concurrent.ConcurrentDictionary<string, CertHackStore> certs
             , Microsoft.AspNetCore.Connections.ConnectionContext connectionContext
             , string name)
@@ -100,12 +101,7 @@ namespace TestApplicationHttps.Configuration.Kestrel
                 {
                     System.Console.WriteLine("SNI Name: {0}", name);
                     
-                    if (IsNotWindows)
-                        return thisCert.Value.Certificate;
-
-                    // Hack for 2017 Windoze Bug "No credentials are available in the security package" 
-                    // SslStream is not working with ephemeral keys ... 
-                    return thisCert.Value.NewCertificate;
+                    return thisCert.Value.Certificate;
                 } // Next thisCert 
 
             } // End if (certs != null && certs.Count > 0) 
