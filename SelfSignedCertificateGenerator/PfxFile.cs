@@ -1,4 +1,8 @@
 
+using System;
+using System.Linq;
+
+
 namespace SelfSignedCertificateGenerator
 {
 
@@ -27,8 +31,8 @@ namespace SelfSignedCertificateGenerator
 
     public class PfxFile
     {
-
-
+        
+        
         // System.Security.Cryptography.X509Certificates.X509Certificate2.Import (string fileName);
 
         // https://docs.microsoft.com/en-us/dotnet/api/system.security.cryptography.x509certificates.x509certificate2.import?view=netframework-4.7.2
@@ -45,14 +49,16 @@ namespace SelfSignedCertificateGenerator
             // create certificate entry
             Org.BouncyCastle.Pkcs.X509CertificateEntry certEntry =
                 new Org.BouncyCastle.Pkcs.X509CertificateEntry(certificate);
-            string friendlyName = certificate.SubjectDN.ToString();
+            
+            Org.BouncyCastle.Asn1.X509.X509Name name = new Org.BouncyCastle.Asn1.X509.X509Name(certificate.SubjectDN.ToString());
+            string friendlyName = name
+                .GetValueList(Org.BouncyCastle.Asn1.X509.X509Name.O)
+                .OfType<string>()
+                .FirstOrDefault();
 
-            if (!friendlyName.Contains("obelix", System.StringComparison.InvariantCultureIgnoreCase))
+            if(System.StringComparer.InvariantCultureIgnoreCase.Equals("Skynet Earth Inc.", friendlyName))
                 friendlyName = "Skynet Certification Authority";
-            else
-                friendlyName = "Coopérative Ménhir Obelix Gmbh & Co. KGaA";
-
-
+            
             // get bytes of private key.
             Org.BouncyCastle.Asn1.Pkcs.PrivateKeyInfo keyInfo = Org.BouncyCastle.Pkcs.PrivateKeyInfoFactory.CreatePrivateKeyInfo(privateKey);
             //byte[] keyBytes = keyInfo.ToAsn1Object().GetEncoded();
@@ -167,9 +173,16 @@ namespace SelfSignedCertificateGenerator
 
             return cert;
         }
-
-
+        
+        
+        public static string ExtractOrganizationFromMS(System.Security.Cryptography.X509Certificates.X509Certificate2 certificate)
+        {
+            string organization = System.Text.RegularExpressions.Regex.Match(certificate.Subject, @"O\s?=(.*)\s").Groups[1].ToString();
+            return organization;
+        }
+        
+        
     }
-
-
+    
+    
 }

@@ -104,8 +104,8 @@ https://example.int/TestApplicationHttps
 
             // https://serverfault.com/questions/9708/what-is-a-pem-file-and-how-does-it-differ-from-other-openssl-generated-key-file
             // https://blog.knoldus.com/easiest-way-to-setup-ssl-on-nginx-using-pfx-files/
-            // PfxData pfx = GenerateRootCertificate(random);
-            PfxData pfx = PfxFile.Read("skynet.pfx");
+            PfxData pfx = GenerateRootCertificate(random);
+            // PfxData pfx = PfxFile.Read("skynet.pfx");
 
             GenerateSslCertificate(pfx, random);
 

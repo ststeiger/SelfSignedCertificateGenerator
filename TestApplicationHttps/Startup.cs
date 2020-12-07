@@ -25,8 +25,12 @@ namespace TestApplicationHttps
         {
             services.AddHttpsRedirection(options =>
             {
-                options.HttpsPort = 443;
+                if(System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows))
+                    options.HttpsPort = 443;
+                else 
+                    options.HttpsPort = 5005;
             });
+            
 
             services.AddRazorPages();
         }

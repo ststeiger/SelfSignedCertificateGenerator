@@ -26,6 +26,8 @@ namespace TestApplicationHttps
         // https://www.drunkcode.net/en/posts/2020/6/10/parsing-with-ReadOnlySpan-and-first-try-of-OBJ-reader
         public static void Main(string[] args)
         {
+            // ln -s /etc/nginx/sites-available/example.int example.int
+            
             using (System.IO.FileSystemWatcher watcher = new System.IO.FileSystemWatcher())
             {
                 // listenOptions.UseHttps("testCert.pfx", "testPassword");                                
