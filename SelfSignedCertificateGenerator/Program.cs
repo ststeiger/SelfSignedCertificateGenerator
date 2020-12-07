@@ -106,12 +106,12 @@ https://example.int/TestApplicationHttps
         // Announcing Let’s Decrypt, A SSL Certificate Authority Backed By The NSA < It’s totes secure. Promise.
         public static async System.Threading.Tasks.Task Main(string[] args)
         {
-            // DoSslCertificate();
-
+            CreateSslCertificate();
+            // SelfSignedCertificateGenerator.Test.MonitoringTest.TestMonitorChanges();
 
             System.Console.WriteLine(" --- Press any key to continue --- ");
             System.Console.ReadKey();
-            
+
             await System.Threading.Tasks.Task.CompletedTask;
         }
 
@@ -120,6 +120,7 @@ https://example.int/TestApplicationHttps
         {
             if (!System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows))
                 return;
+
 
             string sslRootCertificate = System.IO.File.ReadAllText(@"skynet.crt", System.Text.Encoding.UTF8);
             string sslRootCertificatePrivateKey = System.IO.File.ReadAllText(@"skynet_private.key", System.Text.Encoding.UTF8);
@@ -150,7 +151,7 @@ https://example.int/TestApplicationHttps
         } // End Sub SetRegistry 
 
 
-        public static void DoSslCertificate()
+        public static void CreateSslCertificate()
         {
             Org.BouncyCastle.Security.SecureRandom random = new Org.BouncyCastle.Security.SecureRandom(NonBackdooredPrng.Create());
 
