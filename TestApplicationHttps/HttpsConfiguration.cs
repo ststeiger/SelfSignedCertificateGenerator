@@ -12,10 +12,15 @@ namespace TestApplicationHttps.Configuration.Kestrel
 
         public static void HttpsDefaults(Microsoft.AspNetCore.Server.Kestrel.Https.HttpsConnectionAdapterOptions listenOptions)
         {
+            bool isNotWindows = !System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows);
+
+#if NO_NGINX_FUCKUP
             listenOptions.OnAuthenticate =
                 delegate (Microsoft.AspNetCore.Connections.ConnectionContext connectionContext, System.Net.Security.SslServerAuthenticationOptions sslOptions)
                 {
-                    #if NO_NGINX_FUCKUP
+                    // not supported on Windoze 
+                    if (isNotWindows)
+                    {
                         sslOptions.CipherSuitesPolicy = new System.Net.Security.CipherSuitesPolicy(
                            new System.Net.Security.TlsCipherSuite[]
                            {
@@ -24,11 +29,11 @@ namespace TestApplicationHttps.Configuration.Kestrel
                                 System.Net.Security.TlsCipherSuite.TLS_CHACHA20_POLY1305_SHA256,
                                // ...
                            });
-                    #endif
+                    } // End if (!isWindows) 
 
-                }
+                } // End Delegate 
             ; // End OnAuthenticate 
-
+#endif
         } // End Sub HttpsDefaults 
 
 
