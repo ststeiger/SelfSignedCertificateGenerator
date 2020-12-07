@@ -4,6 +4,32 @@ using Microsoft.AspNetCore.Hosting; // for UseHttps
 
 namespace TestApplicationHttps.Configuration.Kestrel 
 {
+    
+    
+    public class BullshitStore
+    {
+        
+        public System.Security.Cryptography.X509Certificates.X509Certificate2 Certificate;
+        protected byte[] m_bkcs12Bytes;
+        
+        
+        public BullshitStore(System.Security.Cryptography.X509Certificates.X509Certificate2 cert)
+        {
+            this.Certificate = cert;
+            this.m_bkcs12Bytes = cert.Export(System.Security.Cryptography.X509Certificates.X509ContentType.Pkcs12);
+        }
+        
+        
+        public System.Security.Cryptography.X509Certificates.X509Certificate2 NewCertificate
+        {
+            get
+            {
+                return new System.Security.Cryptography.X509Certificates.X509Certificate2(this.m_bkcs12Bytes);
+            }
+        }
+        
+        
+    }
 
 
     public static class Https
@@ -42,6 +68,21 @@ namespace TestApplicationHttps.Configuration.Kestrel
             // certs["localhost"] = localhostCert;
         }
 
+        private static bool? s_isNotWindows;
+        
+        public static bool IsNotWindows
+        {
+            get
+            {
+                if (s_isNotWindows.HasValue)
+                    return s_isNotWindows.Value;
+                
+                s_isNotWindows = !System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows);
+                return s_isNotWindows.Value;
+            }
+        }
+
+
 
         public static System.Security.Cryptography.X509Certificates.X509Certificate2 ServerCertificateSelector(
               System.Collections.Concurrent.ConcurrentDictionary<string, System.Security.Cryptography.X509Certificates.X509Certificate2> certs
@@ -59,11 +100,11 @@ namespace TestApplicationHttps.Configuration.Kestrel
                     in certs)
                 {
                     System.Console.WriteLine("SNI Name: {0}", name);
-
-                    if (!System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows))
+                    
+                    if (IsNotWindows)
                         return thisCert.Value;
-
-                    // Hack for Windoze Bug "No credentials are available in the security package" 
+                    
+                    // Hack for 2017 Windoze Bug "No credentials are available in the security package" 
                     // SslStream is not working with ephemeral keys ... 
                     return new System.Security.Cryptography.X509Certificates.X509Certificate2(
                             thisCert.Value.Export(
@@ -80,7 +121,7 @@ namespace TestApplicationHttps.Configuration.Kestrel
                 return cert;
             }
             */
-
+            
             throw new System.IO.InvalidDataException("No certificate for name \"" + name + "\".");
         } // End Function ServerCertificateSelector 
 
