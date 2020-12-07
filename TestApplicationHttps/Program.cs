@@ -1,8 +1,9 @@
 
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Hosting;
+using Microsoft.AspNetCore.Hosting; // for UseLinuxTransport, UseIISIntegration, UseKestrel, UseStartup
+using Microsoft.Extensions.Hosting; // for ConfigureWebHostDefaults, Run
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 
 
 namespace TestApplicationHttps
@@ -27,7 +28,7 @@ namespace TestApplicationHttps
         public static void Main(string[] args)
         {
             // https://medium.com/@mvuksano/how-to-properly-configure-your-nginx-for-tls-564651438fe0
-            
+
             // ln -s /etc/nginx/sites-available/example.int example.int
             // cat cert.pem ca.pem > fullchain.pem
             // cat ./obelix.pem ./../skynet/skynet.crt > fullchain.pem
@@ -53,14 +54,15 @@ namespace TestApplicationHttps
         // https://medium.com/@MaartenSikkema/automatically-request-and-use-lets-encrypt-certificates-in-dotnet-core-9d0d152a59b5
         // https://github.com/dotnet/aspnetcore/issues/1190
         // https://docs.microsoft.com/en-us/aspnet/core/fundamentals/servers/kestrel?view=aspnetcore-5.0#code-try-30
-        public static IHostBuilder CreateHostBuilder(string[] args, System.IO.FileSystemWatcher watcher)
+        public static Microsoft.Extensions.Hosting.IHostBuilder CreateHostBuilder(
+            string[] args, System.IO.FileSystemWatcher watcher)
         {
             // Microsoft.AspNetCore.Server.IIS
 
-            return Host
+            return Microsoft.Extensions.Hosting.Host
                 .CreateDefaultBuilder(args)
                 .ConfigureWebHostDefaults(
-                    delegate (IWebHostBuilder webBuilder)
+                    delegate (Microsoft.AspNetCore.Hosting.IWebHostBuilder webBuilder)
                     {
 
 #if true 
@@ -68,9 +70,16 @@ namespace TestApplicationHttps
                         // https://docs.microsoft.com/en-us/aspnet/core/fundamentals/servers/kestrel?view=aspnetcore-5.0#code-try-30
                         webBuilder.ConfigureKestrel(
                             delegate (
-                                 WebHostBuilderContext builderContext
+                                 Microsoft.AspNetCore.Hosting.WebHostBuilderContext builderContext
                                 , Microsoft.AspNetCore.Server.Kestrel.Core.KestrelServerOptions serverOptions)
                             {
+                                Microsoft.Extensions.Configuration.IConfigurationSection section = 
+                                    builderContext.Configuration.GetSection("Kestrel");
+
+                                System.Console.WriteLine(section);
+
+                                serverOptions.AddServerHeader = false;
+
                                 // https://github.com/dotnet/aspnetcore/pull/24286
                                 // From config-file with reload on change 
                                 // serverOptions.Configure(builderContext.Configuration.GetSection("Kestrel"), reloadOnChange: false);
@@ -90,7 +99,25 @@ namespace TestApplicationHttps
                         ); // End ConfigureKestrel 
 #endif
 
-                        // webBuilder.UseUrls("");
+
+                        // http://localhost:5000      {scheme}://{loopbackAddress}:{port}
+                        // http://192.168.8.31:5005   {scheme}://{IPAddress}:{port}
+                        // http://*:6264              {scheme}://*:{port}
+
+                        // The port in the above patterns is also optional. 
+                        // If you omit it, the default port for the given scheme is used instead 
+                        // (port 80 for http, port 443 for https).
+
+                        // if you're hosting multiple applications on a "bare metal" machine, 
+                        // you may well need to set an explicit IPAddress. 
+                        // If you're hosting in a container, then you can generally use a localhost address.
+
+
+                        // https://andrewlock.net/5-ways-to-set-the-urls-for-an-aspnetcore-app/
+                        // The easiest option is to hard code them when configuring
+                        // webBuilder.UseUrls("http://localhost:5003", "https://localhost:5004");
+
+                        
 
                         // https://developers.redhat.com/blog/2018/07/24/improv-net-core-kestrel-performance-linux/
                         webBuilder.UseLinuxTransport();
@@ -100,7 +127,7 @@ namespace TestApplicationHttps
                             webBuilder.UseIISIntegration();
                         }
                         else webBuilder.UseKestrel();
-                        
+
 
                         webBuilder.UseStartup<Startup>()
                         // .UseApplicationInsights()
