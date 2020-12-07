@@ -6,21 +6,23 @@ namespace TestApplicationHttps.Configuration.Kestrel
 {
     
     
-    public class BullshitStore
+    public class CertHackStore
     {
-        
-        public System.Security.Cryptography.X509Certificates.X509Certificate2 Certificate;
+
+        internal System.Security.Cryptography.X509Certificates.X509Certificate2 Certificate;
         protected byte[] m_bkcs12Bytes;
-        
-        
-        public BullshitStore(System.Security.Cryptography.X509Certificates.X509Certificate2 cert)
+
+
+        internal CertHackStore(System.Security.Cryptography.X509Certificates.X509Certificate2 cert)
         {
             this.Certificate = cert;
             this.m_bkcs12Bytes = cert.Export(System.Security.Cryptography.X509Certificates.X509ContentType.Pkcs12);
         }
-        
-        
-        public System.Security.Cryptography.X509Certificates.X509Certificate2 NewCertificate
+
+
+        // Hack for 2017 Windoze Bug "No credentials are available in the security package" 
+        // SslStream is not working with ephemeral keys ... 
+        internal System.Security.Cryptography.X509Certificates.X509Certificate2 NewCertificate
         {
             get
             {
@@ -58,7 +60,7 @@ namespace TestApplicationHttps.Configuration.Kestrel
         }
 
         public static void CertificateFileChanged(
-              System.Collections.Concurrent.ConcurrentDictionary<string, System.Security.Cryptography.X509Certificates.X509Certificate2> certs
+              System.Collections.Concurrent.ConcurrentDictionary<string, CertHackStore> certs
             , object sender
             , System.IO.FileSystemEventArgs e
             )
@@ -84,43 +86,36 @@ namespace TestApplicationHttps.Configuration.Kestrel
 
 
 
-        public static System.Security.Cryptography.X509Certificates.X509Certificate2 ServerCertificateSelector(
-              System.Collections.Concurrent.ConcurrentDictionary<string, System.Security.Cryptography.X509Certificates.X509Certificate2> certs
+        public static System.Security.Cryptography.X509Certificates.X509Certificate2 
+            ServerCertificateSelector(
+              System.Collections.Concurrent.ConcurrentDictionary<string, CertHackStore> certs
             , Microsoft.AspNetCore.Connections.ConnectionContext connectionContext
             , string name)
         {
-            System.Security.Cryptography.X509Certificates.X509Certificate2 cert;
-
             if (certs != null && certs.Count > 0)
             {
                 // return certs.GetEnumerator().Current.Value;
                 // return System.Linq.Enumerable.FirstOrDefault(certs);
-                foreach (System.Collections.Generic.KeyValuePair
-                    <string, System.Security.Cryptography.X509Certificates.X509Certificate2> thisCert  
-                    in certs)
+                foreach (System.Collections.Generic.KeyValuePair<string, CertHackStore> thisCert in certs)
                 {
                     System.Console.WriteLine("SNI Name: {0}", name);
                     
                     if (IsNotWindows)
-                        return thisCert.Value;
-                    
+                        return thisCert.Value.Certificate;
+
                     // Hack for 2017 Windoze Bug "No credentials are available in the security package" 
                     // SslStream is not working with ephemeral keys ... 
-                    return new System.Security.Cryptography.X509Certificates.X509Certificate2(
-                            thisCert.Value.Export(
-                                System.Security.Cryptography.X509Certificates.X509ContentType.Pkcs12
-                            )
-                    );
+                    return thisCert.Value.NewCertificate;
                 } // Next thisCert 
+
             } // End if (certs != null && certs.Count > 0) 
 
 
-            /*
-            if (name != null && certs.TryGetValue(name, out cert))
-            {
-                return cert;
-            }
-            */
+            // CertHackStore cert;
+            // if (name != null && certs.TryGetValue(name, out cert))
+            // {
+            //     return cert.NewCertificate;
+            // }
             
             throw new System.IO.InvalidDataException("No certificate for name \"" + name + "\".");
         } // End Function ServerCertificateSelector 
@@ -131,10 +126,10 @@ namespace TestApplicationHttps.Configuration.Kestrel
             , System.IO.FileSystemWatcher watcher 
             )
         {
-            System.Collections.Concurrent.ConcurrentDictionary<string, System.Security.Cryptography.X509Certificates.X509Certificate2> certs =
-                                                new System.Collections.Concurrent.ConcurrentDictionary<string, System.Security.Cryptography.X509Certificates.X509Certificate2>(
-                                                    System.StringComparer.OrdinalIgnoreCase
-                                            );
+            System.Collections.Concurrent.ConcurrentDictionary<string, CertHackStore> certs =
+                new System.Collections.Concurrent.ConcurrentDictionary<string, CertHackStore>(
+                    System.StringComparer.OrdinalIgnoreCase
+            );
 
             // watcher.Filters.Add("localhost.yml");
             // watcher.Filters.Add("example.com.yaml");
@@ -184,12 +179,11 @@ namespace TestApplicationHttps.Configuration.Kestrel
 
             System.Security.Cryptography.X509Certificates.X509Certificate2 certSslLoaded = System.Security.Cryptography.X509Certificates.X509Certificate2.CreateFromPem(certSpan, keySpan);
             return certSslLoaded;
-        }
+        } // End Function GetCert 
 
-        
-        
+
         public static void UseHttps(
-              System.Collections.Concurrent.ConcurrentDictionary<string, System.Security.Cryptography.X509Certificates.X509Certificate2> certs
+              System.Collections.Concurrent.ConcurrentDictionary<string, CertHackStore> certs
             , Microsoft.AspNetCore.Server.Kestrel.Https.HttpsConnectionAdapterOptions httpsOptions)
         {
             /*
@@ -210,9 +204,7 @@ namespace TestApplicationHttps.Configuration.Kestrel
             certs["sub.example.com"] = subExampleCert;
             */
             
-            System.Security.Cryptography.X509Certificates.X509Certificate2 certSslLoaded = GetCert();
-
-            certs["localhost"] = certSslLoaded;
+            certs["localhost"] = new CertHackStore(GetCert());
             httpsOptions.ServerCertificateSelector =
                 delegate (Microsoft.AspNetCore.Connections.ConnectionContext connectionContext, string name)
                 {

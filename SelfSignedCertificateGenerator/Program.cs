@@ -97,16 +97,17 @@ https://example.int/TestApplicationHttps
     public class Program
     {
 
-        
+
         // https://twitter.com/HackerNewsOnion/status/740228588520247296?lang=en
         // Announcing Let’s Decrypt, A SSL Certificate Authority Backed By The NSA
-        
+
         // Talk about throwing a skunk in the jury pool! I feel like now we need proof this is fiction!
         // ok this activated my paranoia.
         // Announcing Let’s Decrypt, A SSL Certificate Authority Backed By The NSA < It’s totes secure. Promise.
         public static async System.Threading.Tasks.Task Main(string[] args)
         {
-            CreateSslCertificate();
+            // CreateSslCertificate();
+            SetRegistry();
             // SelfSignedCertificateGenerator.Test.MonitoringTest.TestMonitorChanges();
 
             System.Console.WriteLine(" --- Press any key to continue --- ");

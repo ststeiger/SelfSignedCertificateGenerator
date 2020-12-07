@@ -61,10 +61,12 @@ AND ValueName = 'InstallRoot'
 
         /// <summary>
         /// </summary>
-        public static void Main()
+        public static void Test()
         {
             // Just calls the class above to check for events...
             WmiChangeEventTester receiveEvent = new WmiChangeEventTester();
         }
+
+
     }
 }
