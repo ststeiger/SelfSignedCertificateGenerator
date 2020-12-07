@@ -14,23 +14,12 @@ namespace TestApplicationHttps.Configuration.Kestrel
         protected byte[] m_bkcs12Bytes;
 
 
-        internal CertHackStore(System.Security.Cryptography.X509Certificates.X509Certificate2 cert)
+        public CertHackStore(System.Security.Cryptography.X509Certificates.X509Certificate2 cert)
         {
             this.m_isNotWindows = !System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows);
             this.m_certificate = cert;
             this.m_bkcs12Bytes = cert.Export(System.Security.Cryptography.X509Certificates.X509ContentType.Pkcs12);
         } // End Constructor 
-
-
-        // Hack for 2017 Windoze Bug "No credentials are available in the security package" 
-        // SslStream is not working with ephemeral keys ... 
-        internal System.Security.Cryptography.X509Certificates.X509Certificate2 NewCertificate
-        {
-            get
-            {
-                return new System.Security.Cryptography.X509Certificates.X509Certificate2(this.m_bkcs12Bytes);
-            }
-        } // End Property NewCertificate 
 
 
         public System.Security.Cryptography.X509Certificates.X509Certificate2 Certificate
@@ -42,7 +31,7 @@ namespace TestApplicationHttps.Configuration.Kestrel
 
                 // Hack for 2017 Windoze Bug "No credentials are available in the security package" 
                 // SslStream is not working with ephemeral keys ... 
-                return this.NewCertificate;
+                return new System.Security.Cryptography.X509Certificates.X509Certificate2(this.m_bkcs12Bytes);
             }
         } // End Property Certificate 
 
