@@ -59,12 +59,28 @@ namespace TestApplicationHttps
         {
             // Microsoft.AspNetCore.Server.IIS
 
+            var config = new ConfigurationBuilder()
+                   .SetBasePath(System.IO.Directory.GetCurrentDirectory())
+                   .AddJsonFile("hosting.json", optional: false, reloadOnChange: true)
+                   .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+                   .Build();
+
+
+
+
+
             return Microsoft.Extensions.Hosting.Host
                 .CreateDefaultBuilder(args)
+                .ConfigureHostConfiguration(delegate(IConfigurationBuilder builder)
+                {
+                    // https://codingblast.com/asp-net-core-2-preview/
+                    builder.AddJsonFile("hosting.json", optional: false, reloadOnChange: true);
+                })
                 .ConfigureWebHostDefaults(
                     delegate (Microsoft.AspNetCore.Hosting.IWebHostBuilder webBuilder)
                     {
 
+                        // webBuilder.UseConfiguration(config);
 #if true 
 
                         // https://docs.microsoft.com/en-us/aspnet/core/fundamentals/servers/kestrel?view=aspnetcore-5.0#code-try-30
@@ -73,6 +89,7 @@ namespace TestApplicationHttps
                                  Microsoft.AspNetCore.Hosting.WebHostBuilderContext builderContext
                                 , Microsoft.AspNetCore.Server.Kestrel.Core.KestrelServerOptions serverOptions)
                             {
+                                // https://codingblast.com/asp-net-core-2-preview/
                                 Microsoft.Extensions.Configuration.IConfigurationSection section = 
                                     builderContext.Configuration.GetSection("Kestrel");
 
