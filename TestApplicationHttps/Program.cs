@@ -26,6 +26,8 @@ namespace TestApplicationHttps
         // https://www.drunkcode.net/en/posts/2020/6/10/parsing-with-ReadOnlySpan-and-first-try-of-OBJ-reader
         public static void Main(string[] args)
         {
+            // https://medium.com/@mvuksano/how-to-properly-configure-your-nginx-for-tls-564651438fe0
+            
             // ln -s /etc/nginx/sites-available/example.int example.int
             // cat cert.pem ca.pem > fullchain.pem
             // cat ./obelix.pem ./../skynet/skynet.crt > fullchain.pem

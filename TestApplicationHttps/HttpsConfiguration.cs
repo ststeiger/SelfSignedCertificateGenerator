@@ -12,11 +12,11 @@ namespace TestApplicationHttps.Configuration.Kestrel
 
         public static void HttpsDefaults(Microsoft.AspNetCore.Server.Kestrel.Https.HttpsConnectionAdapterOptions listenOptions)
         {
-            /*
             listenOptions.OnAuthenticate =
                 delegate (Microsoft.AspNetCore.Connections.ConnectionContext connectionContext, System.Net.Security.SslServerAuthenticationOptions sslOptions)
                 {
-                    sslOptions.CipherSuitesPolicy = new System.Net.Security.CipherSuitesPolicy(
+                    #if NO_NGINX_FUCKUP
+                        sslOptions.CipherSuitesPolicy = new System.Net.Security.CipherSuitesPolicy(
                            new System.Net.Security.TlsCipherSuite[]
                            {
                                 System.Net.Security.TlsCipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
@@ -24,9 +24,11 @@ namespace TestApplicationHttps.Configuration.Kestrel
                                 System.Net.Security.TlsCipherSuite.TLS_CHACHA20_POLY1305_SHA256,
                                // ...
                            });
+                    #endif
+
                 }
             ; // End OnAuthenticate 
-            */
+            
         }
 
         public static void CertificateFileChanged(
