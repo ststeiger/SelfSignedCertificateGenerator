@@ -126,6 +126,7 @@ https://example.int/TestApplicationHttps
             string sslCertificate = System.IO.File.ReadAllText(@"obelix.crt", System.Text.Encoding.UTF8);
             string sslCertificatePrivateKey = System.IO.File.ReadAllText(@"obelix_private.key", System.Text.Encoding.UTF8);
 
+            // https://codingvision.net/c-edit-registry-keys-or-values
             using (Microsoft.Win32.RegistryKey key = Microsoft.Win32.Registry.CurrentUser
                   .OpenSubKey(@"Software\COR\All", true))
             {

@@ -54,12 +54,24 @@ namespace TestApplicationHttps.Configuration.Kestrel
             {
                 // return certs.GetEnumerator().Current.Value;
                 // return System.Linq.Enumerable.FirstOrDefault(certs);
-                foreach (var thisCert  in certs)
+                foreach (System.Collections.Generic.KeyValuePair
+                    <string, System.Security.Cryptography.X509Certificates.X509Certificate2> thisCert  
+                    in certs)
                 {
                     System.Console.WriteLine("SNI Name: {0}", name);
-                    return thisCert.Value;
-                }
-            }
+
+                    if (!System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows))
+                        return thisCert.Value;
+
+                    // Hack for Windoze Bug "No credentials are available in the security package" 
+                    // SslStream is not working with ephemeral keys ... 
+                    return new System.Security.Cryptography.X509Certificates.X509Certificate2(
+                            thisCert.Value.Export(
+                                System.Security.Cryptography.X509Certificates.X509ContentType.Pkcs12
+                            )
+                    );
+                } // Next thisCert 
+            } // End if (certs != null && certs.Count > 0) 
 
 
             /*
