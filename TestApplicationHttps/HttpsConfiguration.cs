@@ -98,7 +98,8 @@ namespace TestApplicationHttps.Configuration.Kestrel
             watcher.Deleted += new System.IO.FileSystemEventHandler(onChange);
             // watcher.Renamed += new System.IO.RenamedEventHandler(OnRenamed);
 
-            watcher.EnableRaisingEvents = true;
+            if(!System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows))
+                watcher.EnableRaisingEvents = true;
 
 
             listenOptions.UseHttps(

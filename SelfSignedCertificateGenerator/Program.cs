@@ -66,6 +66,19 @@ https://example.int/TestApplicationHttps
      */
 
 
+
+    // https://serverfault.com/questions/9708/what-is-a-pem-file-and-how-does-it-differ-from-other-openssl-generated-key-file
+    // https://blog.knoldus.com/easiest-way-to-setup-ssl-on-nginx-using-pfx-files/
+
+    // https://security.stackexchange.com/questions/62900/do-ssl-x-509-certs-cover-all-ports-for-a-host#:~:text=There%20is%20no%20standard%20for,the%20notion%20of%20%22port%22.
+    // There is no standard for storing a port number in the certificate, 
+    // and no client will verify the presence of that port number anyway, so, in short words: 
+    // certificates are not port - specific. 
+    // The notion of "identity" that certificates manipulate and embody 
+    // does not include the notion of "port".
+
+
+
     // https://www.selfsignedcertificate.com/
     // https://askubuntu.com/questions/73287/how-do-i-install-a-root-certificate
     // https://www.digicert.com/kb/csr-ssl-installation/nginx-openssl.htm
@@ -75,12 +88,12 @@ https://example.int/TestApplicationHttps
     // https://www.digitalocean.com/community/tutorials/how-to-secure-nginx-with-let-s-encrypt-on-ubuntu-18-04
     // https://www.digitalocean.com/community/tutorials/how-to-create-a-self-signed-ssl-certificate-for-nginx-in-ubuntu-18-04
 
-    
+
     // https://www.digicert.com/easy-csr/openssl.htm
     // https://www.digitalocean.com/community/tutorials/how-to-create-a-self-signed-ssl-certificate-for-nginx-in-ubuntu-16-04
     // https://www.digicert.com/kb/csr-ssl-installation/nginx-openssl.htm
     // https://phoenixnap.com/kb/install-ssl-certificate-nginx
-    
+
     public class Program
     {
 
@@ -93,6 +106,51 @@ https://example.int/TestApplicationHttps
         // Announcing Let’s Decrypt, A SSL Certificate Authority Backed By The NSA < It’s totes secure. Promise.
         public static async System.Threading.Tasks.Task Main(string[] args)
         {
+            // DoSslCertificate();
+
+
+            System.Console.WriteLine(" --- Press any key to continue --- ");
+            System.Console.ReadKey();
+            
+            await System.Threading.Tasks.Task.CompletedTask;
+        }
+
+
+        public static void SetRegistry()
+        {
+            if (!System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows))
+                return;
+
+            string sslRootCertificate = System.IO.File.ReadAllText(@"skynet.crt", System.Text.Encoding.UTF8);
+            string sslRootCertificatePrivateKey = System.IO.File.ReadAllText(@"skynet_private.key", System.Text.Encoding.UTF8);
+            string sslCertificate = System.IO.File.ReadAllText(@"obelix.crt", System.Text.Encoding.UTF8);
+            string sslCertificatePrivateKey = System.IO.File.ReadAllText(@"obelix_private.key", System.Text.Encoding.UTF8);
+
+            using (Microsoft.Win32.RegistryKey key = Microsoft.Win32.Registry.CurrentUser
+                  .OpenSubKey(@"Software\COR\All", true))
+            {
+                key.SetValue("skynet_cert", sslRootCertificate);
+                key.SetValue("skynet_key", sslRootCertificatePrivateKey);
+
+                key.SetValue("ssl_cert", sslCertificate);
+                key.SetValue("ssl_key", sslCertificatePrivateKey);
+
+
+                key.SetValue("skynet.cer", sslRootCertificate);
+                key.SetValue("skynet.key", sslRootCertificatePrivateKey);
+
+                key.SetValue("ssl.crt", sslCertificate);
+                key.SetValue("ssl.key", sslCertificatePrivateKey);
+
+
+                key.Close();
+            } // End Using key 
+
+        } // End Sub SetRegistry 
+
+
+        public static void DoSslCertificate()
+        {
             Org.BouncyCastle.Security.SecureRandom random = new Org.BouncyCastle.Security.SecureRandom(NonBackdooredPrng.Create());
 
 
@@ -101,20 +159,12 @@ https://example.int/TestApplicationHttps
             // 3. Sign SSL certificate
 
             // chrome://settings/certificates?search=certifi
-
-            // https://serverfault.com/questions/9708/what-is-a-pem-file-and-how-does-it-differ-from-other-openssl-generated-key-file
-            // https://blog.knoldus.com/easiest-way-to-setup-ssl-on-nginx-using-pfx-files/
             PfxData pfx = GenerateRootCertificate(random);
             // PfxData pfx = PfxFile.Read("skynet.pfx");
 
             GenerateSslCertificate(pfx, random);
 
-            System.Console.WriteLine(" --- Press any key to continue --- ");
-            System.Console.ReadKey();
-            
-            await System.Threading.Tasks.Task.CompletedTask;
         }
-
 
 
         public static PfxData GenerateRootCertificate(Org.BouncyCastle.Security.SecureRandom random)

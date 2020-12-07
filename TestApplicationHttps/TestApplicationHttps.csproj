@@ -2,8 +2,9 @@
 
   <PropertyGroup>
     <TargetFramework>net5.0</TargetFramework>
-	<AspNetCoreHostingModel>InProcess</AspNetCoreHostingModel>
-	<UserSecretsId>638e124c-7cdd-43ee-a784-bf121718043f</UserSecretsId>
+    <PublishTrimmed>true</PublishTrimmed>
+	  <AspNetCoreHostingModel>InProcess</AspNetCoreHostingModel>
+	  <UserSecretsId>638e124c-7cdd-43ee-a784-bf121718043f</UserSecretsId>
   </PropertyGroup>
 
 </Project>
