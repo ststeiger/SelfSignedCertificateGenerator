@@ -8,13 +8,43 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace TestApplicationHttps
 {
+    
+    
+    public class HttpsEndpoint
+    {
+        public string Url { get; set; }
+        public string CertificateFile { get; set; }
+        public string CertificateKey { get; set; }
+        
+        public string CertificateRegistryEntry { get; set; }
+        public string CertificateKeyRegistryEntry { get; set; }
+        
+        public string AesKey { get; set; }
+        public string AesIV { get; set; }
 
+
+        public static System.Security.Cryptography.X509Certificates.X509Certificate2 GetCertificate()
+        {
+            return null;
+        }
+    }
+    
+    
+    public class EndpointPOCO
+    {
+        public string[] Http { get; set; }
+        public string[] Https { get; set; }
+    }
+
+    public class POCO
+    {
+        public EndpointPOCO Endpoints { get; set; }
+        
+    }
 
     // 1. add  <AspNetCoreHostingModel>InProcess</AspNetCoreHostingModel> to project file 
     public class Program
     {
-
-
         // https://github.com/Tondas/LetsEncrypt
         // https://blogs.akamai.com/2018/10/best-practices-for-ultra-low-latency-streaming-using-chunked-encoded-and-chunk-transferred-cmaf.html
         // https://www.monitis.com/blog/how-to-log-to-postgresql-with-syslog-ng/
@@ -36,14 +66,14 @@ namespace TestApplicationHttps
             {
                 // listenOptions.UseHttps("testCert.pfx", "testPassword");                                
                 watcher.NotifyFilter = System.IO.NotifyFilters.Size
-                    | System.IO.NotifyFilters.LastWrite
-                    | System.IO.NotifyFilters.CreationTime
-                    | System.IO.NotifyFilters.FileName // Needed if text-file is changed with Visual Studio ...
-                ;
+                                       | System.IO.NotifyFilters.LastWrite
+                                       | System.IO.NotifyFilters.CreationTime
+                                       | System.IO.NotifyFilters
+                                           .FileName // Needed if text-file is changed with Visual Studio ...
+                    ;
 
                 CreateHostBuilder(args, watcher).Build().Run();
             } // End Using watcher 
-
         } // End Sub Main 
 
 
@@ -58,15 +88,17 @@ namespace TestApplicationHttps
             string[] args, System.IO.FileSystemWatcher watcher)
         {
             // Microsoft.AspNetCore.Server.IIS
+            string dir = System.IO.Path.GetDirectoryName(typeof(Program).Assembly.Location);
 
-            var config = new ConfigurationBuilder()
-                   .SetBasePath(System.IO.Directory.GetCurrentDirectory())
-                   .AddJsonFile("hosting.json", optional: false, reloadOnChange: true)
-                   .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-                   .Build();
+            IConfigurationRoot hostConfig = new ConfigurationBuilder()
+                // .SetBasePath(System.IO.Directory.GetCurrentDirectory())
+                .SetBasePath(dir)
+                .AddJsonFile("hosting.json", optional: false, reloadOnChange: true)
+                .Build();
 
-
-
+            // https://stackoverflow.com/questions/54461422/iconfiguration-getsection-as-properties-returns-null
+            IConfigurationSection sect = hostConfig.GetSection("Logging");
+            System.Console.WriteLine(hostConfig.GetSection("Kestrel:EndPoints:Http:Url").Value);
 
 
             return Microsoft.Extensions.Hosting.Host
@@ -77,23 +109,26 @@ namespace TestApplicationHttps
                     builder.AddJsonFile("hosting.json", optional: false, reloadOnChange: true);
                 })
                 .ConfigureWebHostDefaults(
-                    delegate (Microsoft.AspNetCore.Hosting.IWebHostBuilder webBuilder)
+                    delegate(Microsoft.AspNetCore.Hosting.IWebHostBuilder webBuilder)
                     {
-
                         // webBuilder.UseConfiguration(config);
-#if true 
+#if true
 
                         // https://docs.microsoft.com/en-us/aspnet/core/fundamentals/servers/kestrel?view=aspnetcore-5.0#code-try-30
                         webBuilder.ConfigureKestrel(
-                            delegate (
-                                 Microsoft.AspNetCore.Hosting.WebHostBuilderContext builderContext
+                            delegate(
+                                Microsoft.AspNetCore.Hosting.WebHostBuilderContext builderContext
                                 , Microsoft.AspNetCore.Server.Kestrel.Core.KestrelServerOptions serverOptions)
                             {
                                 // https://codingblast.com/asp-net-core-2-preview/
-                                Microsoft.Extensions.Configuration.IConfigurationSection section = 
-                                    builderContext.Configuration.GetSection("Kestrel");
 
-                                System.Console.WriteLine(section);
+
+                                System.Collections.Generic.IEnumerable<IConfigurationSection> sections =
+                                    builderContext.Configuration.GetSection("Kestrel").GetChildren();
+
+                                builderContext.Configuration.GetSection("Kestrel").Get<POCO>();
+
+                                System.Console.WriteLine(sections);
 
                                 serverOptions.AddServerHeader = false;
 
@@ -102,16 +137,16 @@ namespace TestApplicationHttps
                                 // serverOptions.Configure(builderContext.Configuration.GetSection("Kestrel"), reloadOnChange: false);
 
                                 // On Linux, CipherSuitesPolicy can be used to filter TLS handshakes on a per-connection basis:
-                                serverOptions.ConfigureHttpsDefaults(Configuration.Kestrel.Https.HttpsDefaults); // End ConfigureHttpsDefaults 
+                                serverOptions.ConfigureHttpsDefaults(Configuration.Kestrel.Https
+                                    .HttpsDefaults); // End ConfigureHttpsDefaults 
 
                                 // serverOptions.Listen(System.Net.IPAddress.Loopback, 5001,
                                 serverOptions.ListenAnyIP(5005,
-                                    delegate (Microsoft.AspNetCore.Server.Kestrel.Core.ListenOptions listenOptions)
+                                    delegate(Microsoft.AspNetCore.Server.Kestrel.Core.ListenOptions listenOptions)
                                     {
                                         Configuration.Kestrel.Https.ListenAnyIP(listenOptions, watcher);
                                     }
                                 ); // End ListenAnyIp 
-
                             }
                         ); // End ConfigureKestrel 
 #endif
@@ -134,12 +169,12 @@ namespace TestApplicationHttps
                         // The easiest option is to hard code them when configuring
                         // webBuilder.UseUrls("http://localhost:5003", "https://localhost:5004");
 
-                        
 
                         // https://developers.redhat.com/blog/2018/07/24/improv-net-core-kestrel-performance-linux/
                         webBuilder.UseLinuxTransport();
 
-                        if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows))
+                        if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime
+                            .InteropServices.OSPlatform.Windows))
                         {
                             webBuilder.UseIISIntegration();
                         }
@@ -147,15 +182,9 @@ namespace TestApplicationHttps
 
 
                         webBuilder.UseStartup<Startup>()
-                        // .UseApplicationInsights()
-                        ;
-
+                            // .UseApplicationInsights()
+                            ;
                     }); // End ConfigureWebHostDefaults 
-
         } // End Function CreateHostBuilder 
-
-
     } // End Class Program 
-
-
 } // End Namespace TestApplicationHttps 
