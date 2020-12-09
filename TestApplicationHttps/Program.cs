@@ -6,6 +6,11 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 
+
+using Microsoft.AspNetCore.Connections;
+
+
+
 namespace TestApplicationHttps
 {
     
@@ -178,6 +183,10 @@ namespace TestApplicationHttps
                     // https://codingblast.com/asp-net-core-2-preview/
                     builder.AddJsonFile("hosting.json", optional: false, reloadOnChange: true);
                 })
+                .ConfigureServices(delegate(HostBuilderContext context, IServiceCollection serviceCollection)
+                {
+                    // serviceCollection.AddSingleton<string>("Hello"); // Add certificate dictionary here... 
+                })
                 .ConfigureWebHostDefaults(
                     delegate(Microsoft.AspNetCore.Hosting.IWebHostBuilder webBuilder)
                     {
@@ -191,8 +200,8 @@ namespace TestApplicationHttps
                                 , Microsoft.AspNetCore.Server.Kestrel.Core.KestrelServerOptions serverOptions)
                             {
                                 // https://codingblast.com/asp-net-core-2-preview/
-
-
+                                var logger = serverOptions.ApplicationServices.GetRequiredService<ILogger<Program>>();
+                                
                                 System.Collections.Generic.IEnumerable<IConfigurationSection> sections =
                                     builderContext.Configuration.GetSection("Kestrel").GetChildren();
 
@@ -207,8 +216,7 @@ namespace TestApplicationHttps
                                 // serverOptions.Configure(builderContext.Configuration.GetSection("Kestrel"), reloadOnChange: false);
 
                                 // On Linux, CipherSuitesPolicy can be used to filter TLS handshakes on a per-connection basis:
-                                serverOptions.ConfigureHttpsDefaults(Configuration.Kestrel.Https
-                                    .HttpsDefaults); // End ConfigureHttpsDefaults 
+                                serverOptions.ConfigureHttpsDefaults(Configuration.Kestrel.Https.HttpsDefaults); // End ConfigureHttpsDefaults 
 
                                 // serverOptions.Listen(System.Net.IPAddress.Loopback, 5001,
 
@@ -222,12 +230,18 @@ namespace TestApplicationHttps
                                 // serverOptions.ListenAnyIP(5003);
                                 // serverOptions.ListenLocalhost(5004, opts => opts.UseHttps());
                                 // serverOptions.ListenLocalhost(5005, opts => opts.UseHttps());
-
-
-
+                                
+                                
                                 serverOptions.ListenAnyIP(5005,
                                     delegate(Microsoft.AspNetCore.Server.Kestrel.Core.ListenOptions listenOptions)
                                     {
+                                        #if WITH_PROXY
+                                        listenOptions.Use(async (connectionContext, next) =>
+                                        {
+                                            await ProxyProtocol.ProxyProtocol.ProcessAsync(connectionContext, next, logger);
+                                        });
+                                        #endif 
+                                        
                                         Configuration.Kestrel.Https.ListenAnyIP(listenOptions, watcher);
                                     }
                                 ); // End ListenAnyIp 
@@ -271,9 +285,9 @@ namespace TestApplicationHttps
                     }); // End ConfigureWebHostDefaults 
 
         } // End Function CreateHostBuilder 
-
-
+        
+        
     } // End Class Program 
-
-
+    
+    
 } // End Namespace TestApplicationHttps 
