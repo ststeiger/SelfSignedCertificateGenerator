@@ -66,35 +66,28 @@ namespace TestApplicationHttps
 
             // app.UseHttpsRedirection();
 
-            
+
             // https://stackoverflow.com/questions/52347936/exclude-route-from-middleware-net-core
-            app.MapWhen(
-                delegate(Microsoft.AspNetCore.Http.HttpContext httpContext)
+            //app.MapWhen(
+            app.UseWhen(
+                delegate (Microsoft.AspNetCore.Http.HttpContext httpContext)
                 {
                     // http://localhost:51851/.well-known/acme-challenge/token.txt
                     // http://localhost:51851/Privacy
-                    bool b = httpContext.Request.Path.StartsWithSegments("/.well-known/acme-challenge/");
+                    bool b = !httpContext.Request.Path.StartsWithSegments("/.well-known/acme-challenge");
                     return b;
                 }
                 ,
                 delegate (IApplicationBuilder appBuilder)
                 {
-                    // appBuilder.UseHttpsRedirection();
-                    appBuilder.UseStaticFiles();
-                    appBuilder.UseRouting();
-                    appBuilder.UseAuthorization();
-
-                    appBuilder.UseEndpoints(endpoints =>
-                    {
-                        endpoints.MapRazorPages();
-                    });
+                    appBuilder.UseHttpsRedirection();
                 }
             );
 
-
-            app.UseHttpsRedirection();
+            
             app.UseStaticFiles();
             app.UseRouting();
+
             app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>
