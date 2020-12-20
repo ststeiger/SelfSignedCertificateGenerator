@@ -1,6 +1,7 @@
 
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -29,7 +30,8 @@ namespace TestApplicationHttps
             services.AddHttpsRedirection(options =>
             {
                 if(System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows))
-                    options.HttpsPort = 443;
+                    // options.HttpsPort = 443;
+                    options.HttpsPort = 44322;
                 else 
                     options.HttpsPort = 5005;
             });
@@ -61,11 +63,36 @@ namespace TestApplicationHttps
                 app.UseHsts();
             }
 
+
+            // app.UseHttpsRedirection();
+
+            app.MapWhen(
+                delegate(Microsoft.AspNetCore.Http.HttpContext httpContext)
+                {
+                    // http://localhost:51851/.well-known/acme-challenge/token.txt
+                    // http://localhost:51851/Privacy
+                    bool b = httpContext.Request.Path.StartsWithSegments("/.well-known/acme-challenge/");
+                    return b;
+                }
+                ,
+                delegate (IApplicationBuilder appBuilder)
+                {
+                    // appBuilder.UseHttpsRedirection();
+                    appBuilder.UseStaticFiles();
+                    appBuilder.UseRouting();
+                    appBuilder.UseAuthorization();
+
+                    appBuilder.UseEndpoints(endpoints =>
+                    {
+                        endpoints.MapRazorPages();
+                    });
+                }
+            );
+
+
             app.UseHttpsRedirection();
             app.UseStaticFiles();
-
             app.UseRouting();
-
             app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>
