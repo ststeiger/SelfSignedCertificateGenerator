@@ -66,6 +66,8 @@ namespace TestApplicationHttps
 
             // app.UseHttpsRedirection();
 
+            
+            // https://stackoverflow.com/questions/52347936/exclude-route-from-middleware-net-core
             app.MapWhen(
                 delegate(Microsoft.AspNetCore.Http.HttpContext httpContext)
                 {

@@ -181,7 +181,7 @@ namespace TestApplicationHttps
                 .ConfigureHostConfiguration(delegate(IConfigurationBuilder builder)
                 {
                     // https://codingblast.com/asp-net-core-2-preview/
-                    builder.AddJsonFile("hosting.json", optional: false, reloadOnChange: true);
+                    // builder.AddJsonFile("hosting.json", optional: false, reloadOnChange: true);
                 })
                 .ConfigureServices(delegate(HostBuilderContext context, IServiceCollection serviceCollection)
                 {
@@ -202,13 +202,14 @@ namespace TestApplicationHttps
                                 // https://codingblast.com/asp-net-core-2-preview/
                                 var logger = serverOptions.ApplicationServices.GetRequiredService<ILogger<Program>>();
                                 
+                                /*
                                 System.Collections.Generic.IEnumerable<IConfigurationSection> sections =
                                     builderContext.Configuration.GetSection("Kestrel").GetChildren();
 
                                 builderContext.Configuration.GetSection("Kestrel").Get<POCO>();
 
                                 System.Console.WriteLine(sections);
-
+*/
                                 serverOptions.AddServerHeader = false;
 
                                 // https://github.com/dotnet/aspnetcore/pull/24286
@@ -235,7 +236,7 @@ namespace TestApplicationHttps
                                 serverOptions.ListenAnyIP(5005,
                                     delegate(Microsoft.AspNetCore.Server.Kestrel.Core.ListenOptions listenOptions)
                                     {
-                                        #if WITH_PROXY
+                                        #if true // WITH_PROXY
                                         listenOptions.Use(async (connectionContext, next) =>
                                         {
                                             await ProxyProtocol.ProxyProtocol.ProcessAsync(connectionContext, next, logger);

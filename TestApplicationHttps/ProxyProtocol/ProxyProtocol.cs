@@ -4,6 +4,7 @@
 using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.IO.Pipelines;
 using System.Net;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
@@ -36,7 +37,7 @@ namespace TestApplicationHttps.ProxyProtocol
         /// </summary>
         public static async Task ProcessAsync(ConnectionContext connectionContext, Func<Task> next, ILogger logger = null)
         {
-            var input = connectionContext.Transport.Input;
+            PipeReader input = connectionContext.Transport.Input;
             // Count how many bytes we've examined so we never go backwards, Pipes don't allow that.
             var minBytesExamined = 0L;
             while (true)
