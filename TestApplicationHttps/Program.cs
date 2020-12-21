@@ -231,18 +231,31 @@ namespace TestApplicationHttps
                                 // serverOptions.ListenAnyIP(5003);
                                 // serverOptions.ListenLocalhost(5004, opts => opts.UseHttps());
                                 // serverOptions.ListenLocalhost(5005, opts => opts.UseHttps());
-                                
-                                
+
+
+                                serverOptions.ListenAnyIP(5006, delegate (Microsoft.AspNetCore.Server.Kestrel.Core.ListenOptions listenOptions)
+                                {
+#if true // WITH_PROXY
+                                    listenOptions.Use(async (connectionContext, next) =>
+                                    {
+                                        await ProxyProtocol.ProxyProtocol.ProcessAsync(connectionContext, next, logger);
+                                    });
+#endif
+                                });
+
+
                                 serverOptions.ListenAnyIP(5005,
                                     delegate(Microsoft.AspNetCore.Server.Kestrel.Core.ListenOptions listenOptions)
                                     {
-                                        #if true // WITH_PROXY
-                                        listenOptions.Use(async (connectionContext, next) =>
+#if true // WITH_PROXY
+                                        listenOptions.Use( async delegate(
+                                                  Microsoft.AspNetCore.Connections.ConnectionContext connectionContext
+                                                , System.Func<System.Threading.Tasks.Task> next)
                                         {
                                             await ProxyProtocol.ProxyProtocol.ProcessAsync(connectionContext, next, logger);
                                         });
-                                        #endif 
-                                        
+#endif
+
                                         Configuration.Kestrel.Https.ListenAnyIP(listenOptions, watcher);
                                     }
                                 ); // End ListenAnyIp 

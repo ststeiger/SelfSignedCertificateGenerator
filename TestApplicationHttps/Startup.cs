@@ -29,11 +29,12 @@ namespace TestApplicationHttps
         {
             services.AddHttpsRedirection(options =>
             {
-                if(System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows))
-                    // options.HttpsPort = 443;
-                    options.HttpsPort = 44322;
-                else 
+                bool useKestrel = true;
+
+                if (useKestrel || !System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows))
                     options.HttpsPort = 5005;
+                else // options.HttpsPort = 443;
+                    options.HttpsPort = 44322;    
             });
             
 
@@ -74,8 +75,7 @@ namespace TestApplicationHttps
                 {
                     // http://localhost:51851/.well-known/acme-challenge/token.txt
                     // http://localhost:51851/Privacy
-                    bool b = !httpContext.Request.Path.StartsWithSegments("/.well-known/acme-challenge");
-                    return b;
+                    return !httpContext.Request.Path.StartsWithSegments("/.well-known/acme-challenge");
                 }
                 ,
                 delegate (IApplicationBuilder appBuilder)
@@ -83,7 +83,6 @@ namespace TestApplicationHttps
                     appBuilder.UseHttpsRedirection();
                 }
             );
-
             
             app.UseStaticFiles();
             app.UseRouting();
