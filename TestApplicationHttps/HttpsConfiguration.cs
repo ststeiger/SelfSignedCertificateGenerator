@@ -1,6 +1,4 @@
 ﻿
-using Microsoft.AspNetCore.Hosting; // for UseHttps 
-
 using Microsoft.AspNetCore.Connections; // for listenOptions.Use
 using Microsoft.Extensions.DependencyInjection; // for GetRequiredService 
 
@@ -9,6 +7,7 @@ namespace TestApplicationHttps.Configuration.Kestrel
 {
 
 
+    // https://github.com/ffMathy/FluffySpoon.AspNet.EncryptWeMust
     public static class Https
     {
 

@@ -6,97 +6,18 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 
-
 using Microsoft.AspNetCore.Connections;
-
 
 
 namespace TestApplicationHttps
 {
-    
-    
-    public class HttpsEndpoint
-    {
-        public string Url { get; set; }
-        public string CertificateFile { get; set; }
-        public string CertificateKey { get; set; }
-        
-        public string CertificateRegistryEntry { get; set; }
-        public string CertificateKeyRegistryEntry { get; set; }
-        
-        public string AesKey { get; set; }
-        public string AesIV { get; set; }
 
-
-        public System.Security.Cryptography.X509Certificates.X509Certificate2 GetCertificate()
-        {
-            if (System.IO.File.Exists(this.CertificateFile) && System.IO.File.Exists(this.CertificateKey))
-            {
-                return System.Security.Cryptography.X509Certificates.X509Certificate2.CreateFromPemFile(this.CertificateFile, this.CertificateKey);
-            }
-
-            if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows))
-            {
-                if (!string.IsNullOrEmpty(this.CertificateRegistryEntry)
-                    && !string.IsNullOrEmpty(this.CertificateKeyRegistryEntry)
-                    )
-                {
-                    string ssl_cert = null;
-                    string ssl_key = null;
-
-                    using (Microsoft.Win32.RegistryKey key = Microsoft.Win32.Registry.CurrentUser
-      .OpenSubKey(@"Software\COR\All", false))
-                    {
-                        ssl_cert = (string)key.GetValue("ssl_cert");
-                        ssl_key = (string)key.GetValue("ssl_key");
-                        key.Close();
-                    } // End Using key 
-
-                    System.ReadOnlySpan<char> certa = System.MemoryExtensions.AsSpan(ssl_cert);
-                    System.ReadOnlySpan<char> keya = System.MemoryExtensions.AsSpan(ssl_key);
-                    return System.Security.Cryptography.X509Certificates.X509Certificate2
-                        .CreateFromPem(certa, keya);
-                } // End if CertEntriesExist 
-
-            } // End if IsWindows 
-            
-            throw new System.IO.InvalidDataException("Need SSL-Key");
-        } // End Function GetCertificate 
-
-
-    } // End HttpsEndpoint  
-
-
-    public class EndpointPOCO
-    {
-        public System.Collections.Generic.List<string> Http { get; set; }
-        public System.Collections.Generic.List<HttpsEndpoint> Https { get; set; }
-
-
-        public EndpointPOCO()
-        {
-            this.Http = new System.Collections.Generic.List<string>();
-            this.Https = new System.Collections.Generic.List<HttpsEndpoint>();
-        }
-
-    }
-
-
-    public class POCO
-    {
-        public EndpointPOCO Endpoints { get; set; }
-
-        public POCO()
-        {
-            this.Endpoints = new EndpointPOCO();
-        }
-
-
-    }
 
     // 1. add  <AspNetCoreHostingModel>InProcess</AspNetCoreHostingModel> to project file 
     public class Program
     {
+
+
         // https://github.com/Tondas/LetsEncrypt
         // https://blogs.akamai.com/2018/10/best-practices-for-ultra-low-latency-streaming-using-chunked-encoded-and-chunk-transferred-cmaf.html
         // https://www.monitis.com/blog/how-to-log-to-postgresql-with-syslog-ng/
@@ -110,29 +31,6 @@ namespace TestApplicationHttps
         public static void Main(string[] args)
         {
             // https://medium.com/@mvuksano/how-to-properly-configure-your-nginx-for-tls-564651438fe0
-
-            var poco = new POCO();
-            poco.Endpoints.Http.AddRange(new string[] { "http://*:5000", "http://localhost:5000", "http://machinename:5000" });
-
-            poco.Endpoints.Https.Add(new HttpsEndpoint()
-            {
-                Url = "https://*:5005",
-                CertificateRegistryEntry = "ssl_cert",
-                CertificateKeyRegistryEntry = "ssl_key"
-            });
-
-
-            poco.Endpoints.Https.Add(new HttpsEndpoint()
-            {
-                Url = "https://*:5006",
-                CertificateRegistryEntry = "ssl_cert",
-                CertificateKeyRegistryEntry = "ssl_key"
-            });
-
-            string json = System.Text.Json.JsonSerializer.Serialize(poco);
-            System.Console.WriteLine(json);
-
-
 
             // ln -s /etc/nginx/sites-available/example.int example.int
             // cat cert.pem ca.pem > fullchain.pem
@@ -162,29 +60,18 @@ namespace TestApplicationHttps
         public static Microsoft.Extensions.Hosting.IHostBuilder CreateHostBuilder(
             string[] args, System.IO.FileSystemWatcher watcher)
         {
-            // Microsoft.AspNetCore.Server.IIS
-            string dir = System.IO.Path.GetDirectoryName(typeof(Program).Assembly.Location);
-            /*
-            IConfigurationRoot hostConfig = new ConfigurationBuilder()
-                // .SetBasePath(System.IO.Directory.GetCurrentDirectory())
-                .SetBasePath(dir)
-                .AddJsonFile("hosting.json", optional: false, reloadOnChange: true)
-                .Build();
-
-            // https://stackoverflow.com/questions/54461422/iconfiguration-getsection-as-properties-returns-null
-            IConfigurationSection sect = hostConfig.GetSection("Logging");
-            System.Console.WriteLine(hostConfig.GetSection("Kestrel:EndPoints:Http:Url").Value);
-            */
-
-            
-            
-            
             return Microsoft.Extensions.Hosting.Host
                 .CreateDefaultBuilder(args)
                 .ConfigureHostConfiguration(delegate(IConfigurationBuilder builder)
                 {
                     // https://codingblast.com/asp-net-core-2-preview/
-                    builder.AddJsonFile("hosting.json", optional: false, reloadOnChange: true);
+                    // https://andrewlock.net/5-ways-to-set-the-urls-for-an-aspnetcore-app/
+                    builder.AddJsonFile("hosting.json", optional: true, reloadOnChange: true);
+
+                    string launchSettings = System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory()
+                        , "Properties", "launchSettings.json");
+
+                    builder.AddJsonFile(launchSettings, optional: true);
                 })
                 .ConfigureServices(delegate(HostBuilderContext context, IServiceCollection serviceCollection)
                 {
@@ -212,7 +99,9 @@ namespace TestApplicationHttps
                                 builderContext.Configuration.GetSection("Kestrel").Get<POCO>();
 
                                 System.Console.WriteLine(sections);
-*/
+                                */ 
+
+                                /*
                                 serverOptions.AddServerHeader = false;
 
                                 // https://github.com/dotnet/aspnetcore/pull/24286
@@ -229,7 +118,7 @@ namespace TestApplicationHttps
 
 
                                 serverOptions.ConfigureEndpointDefaults(Configuration.Kestrel.Https.ConfigureEndpointDefaults);
-
+                                */
 
                                 // serverOptions.Listen(System.Net.IPAddress.Loopback, 5001,
 
