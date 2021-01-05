@@ -1,6 +1,9 @@
 ﻿
 using Microsoft.AspNetCore.Hosting; // for UseHttps 
 
+using Microsoft.AspNetCore.Connections; // for listenOptions.Use
+using Microsoft.Extensions.DependencyInjection; // for GetRequiredService 
+
 
 namespace TestApplicationHttps.Configuration.Kestrel 
 {
@@ -9,10 +12,64 @@ namespace TestApplicationHttps.Configuration.Kestrel
     public static class Https
     {
 
+        public static void ConfigureEndpointDefaults(Microsoft.AspNetCore.Server.Kestrel.Core.ListenOptions listenOptions)
+        {
+            Microsoft.Extensions.Logging.ILogger<Program> logger = 
+                listenOptions.ApplicationServices.GetRequiredService<Microsoft.Extensions.Logging.ILogger<Program>>();
 
-        public static void HttpsDefaults(Microsoft.AspNetCore.Server.Kestrel.Https.HttpsConnectionAdapterOptions listenOptions)
+            listenOptions.Use(async (connectionContext, next) =>
+            {
+                await ProxyProtocol.ProxyProtocol.ProcessAsync(connectionContext, next, logger);
+            });
+
+        } // End Sub ConfigureEndpointDefaults 
+
+
+        public static void HttpsDefaults(
+              Microsoft.AspNetCore.Server.Kestrel.Https.HttpsConnectionAdapterOptions listenOptions
+            , System.IO.FileSystemWatcher watcher
+            )
         {
             bool isNotWindows = !System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows);
+
+            System.Collections.Concurrent.ConcurrentDictionary<string, CertHackStore> certs =
+                new System.Collections.Concurrent.ConcurrentDictionary<string, CertHackStore>(
+                    System.StringComparer.OrdinalIgnoreCase
+            );
+
+            string cert = SecretManager.GetSecret<string>("ssl_cert");
+            string key = SecretManager.GetSecret<string>("ssl_key");
+            certs["localhost"] = CertHackStore.FromPem(cert, key);
+
+
+            // watcher.Filters.Add("localhost.yml");
+            // watcher.Filters.Add("example.com.yaml");
+            // watcher.Filters.Add("sub.example.com.yaml");
+
+            System.IO.FileSystemEventHandler onChange = delegate (object sender, System.IO.FileSystemEventArgs e)
+            {
+                CertificateFileChanged(certs, sender, e);
+            };
+
+
+            watcher.Changed += new System.IO.FileSystemEventHandler(onChange);
+            watcher.Created += new System.IO.FileSystemEventHandler(onChange);
+            watcher.Deleted += new System.IO.FileSystemEventHandler(onChange);
+            // watcher.Renamed += new System.IO.RenamedEventHandler(OnRenamed);
+
+            if (!System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows))
+                watcher.EnableRaisingEvents = true;
+
+
+
+            listenOptions.ServerCertificateSelector =
+                      delegate (Microsoft.AspNetCore.Connections.ConnectionContext connectionContext, string name)
+                      {
+                          return ServerCertificateSelector(certs, connectionContext, name);
+                      };
+
+
+
 
 #if NO_NGINX_FUCKUP
             listenOptions.OnAuthenticate =
@@ -76,90 +133,6 @@ namespace TestApplicationHttps.Configuration.Kestrel
             
             throw new System.IO.InvalidDataException("No certificate for name \"" + name + "\".");
         } // End Function ServerCertificateSelector 
-
-
-        public static void ListenAnyIP(
-              Microsoft.AspNetCore.Server.Kestrel.Core.ListenOptions listenOptions
-            , System.IO.FileSystemWatcher watcher 
-        )
-        {
-            System.Collections.Concurrent.ConcurrentDictionary<string, CertHackStore> certs = 
-                new System.Collections.Concurrent.ConcurrentDictionary<string, CertHackStore>(
-                    System.StringComparer.OrdinalIgnoreCase
-            );
-
-            // watcher.Filters.Add("localhost.yml");
-            // watcher.Filters.Add("example.com.yaml");
-            // watcher.Filters.Add("sub.example.com.yaml");
-
-            System.IO.FileSystemEventHandler onChange = delegate (object sender, System.IO.FileSystemEventArgs e)
-            {
-                CertificateFileChanged(certs, sender, e);
-            };
-
-
-            watcher.Changed += new System.IO.FileSystemEventHandler(onChange);
-            watcher.Created += new System.IO.FileSystemEventHandler(onChange);
-            watcher.Deleted += new System.IO.FileSystemEventHandler(onChange);
-            // watcher.Renamed += new System.IO.RenamedEventHandler(OnRenamed);
-
-            if(!System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows))
-                watcher.EnableRaisingEvents = true;
-
-
-            listenOptions.UseHttps(
-
-                delegate (Microsoft.AspNetCore.Server.Kestrel.Https.HttpsConnectionAdapterOptions httpsOptions)
-                {
-                    UseHttps(certs, httpsOptions);
-
-                    httpsOptions.ServerCertificateSelector =
-                        delegate (Microsoft.AspNetCore.Connections.ConnectionContext connectionContext, string name)
-                        {
-                            return ServerCertificateSelector(certs, connectionContext, name);
-                        };
-
-                }
-
-            ); // End ListenOptions.UseHttps
-
-        } // End Sub ListenAnyIP 
-
-
-        public static void UseHttps(
-              System.Collections.Concurrent.ConcurrentDictionary<string, CertHackStore> certs
-            , Microsoft.AspNetCore.Server.Kestrel.Https.HttpsConnectionAdapterOptions httpsOptions)
-        {
-            /*
-            System.Security.Cryptography.X509Certificates.X509Certificate2 localhostCert = Microsoft.AspNetCore.Server.Kestrel.Https.CertificateLoader.LoadFromStoreCert(
-                "localhost", "My", System.Security.Cryptography.X509Certificates.StoreLocation.CurrentUser,
-                allowInvalid: true);
-
-            System.Security.Cryptography.X509Certificates.X509Certificate2 exampleCert = Microsoft.AspNetCore.Server.Kestrel.Https.CertificateLoader.LoadFromStoreCert(
-                "example.com", "My", System.Security.Cryptography.X509Certificates.StoreLocation.CurrentUser,
-                allowInvalid: true);
-
-            System.Security.Cryptography.X509Certificates.X509Certificate2 subExampleCert = Microsoft.AspNetCore.Server.Kestrel.Https.CertificateLoader.LoadFromStoreCert(
-                "sub.example.com", "My", System.Security.Cryptography.X509Certificates.StoreLocation.CurrentUser,
-                allowInvalid: true);
-
-            certs["localhost"] = localhostCert;
-            certs["example.com"] = exampleCert;
-            certs["sub.example.com"] = subExampleCert;
-            */
-
-            string cert = SecretManager.GetSecret<string>("ssl_cert");
-            string key = SecretManager.GetSecret<string>("ssl_key");
-            certs["localhost"] = CertHackStore.FromPem(cert, key);
-
-            httpsOptions.ServerCertificateSelector =
-                delegate (Microsoft.AspNetCore.Connections.ConnectionContext connectionContext, string name)
-                {
-                    return ServerCertificateSelector(certs, connectionContext, name);
-                }
-            ;
-
-        } // End Sub UseHttps 
 
 
     } // End Class Https 

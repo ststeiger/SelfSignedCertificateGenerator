@@ -164,7 +164,7 @@ namespace TestApplicationHttps
         {
             // Microsoft.AspNetCore.Server.IIS
             string dir = System.IO.Path.GetDirectoryName(typeof(Program).Assembly.Location);
-
+            /*
             IConfigurationRoot hostConfig = new ConfigurationBuilder()
                 // .SetBasePath(System.IO.Directory.GetCurrentDirectory())
                 .SetBasePath(dir)
@@ -174,14 +174,17 @@ namespace TestApplicationHttps
             // https://stackoverflow.com/questions/54461422/iconfiguration-getsection-as-properties-returns-null
             IConfigurationSection sect = hostConfig.GetSection("Logging");
             System.Console.WriteLine(hostConfig.GetSection("Kestrel:EndPoints:Http:Url").Value);
+            */
 
-
+            
+            
+            
             return Microsoft.Extensions.Hosting.Host
                 .CreateDefaultBuilder(args)
                 .ConfigureHostConfiguration(delegate(IConfigurationBuilder builder)
                 {
                     // https://codingblast.com/asp-net-core-2-preview/
-                    // builder.AddJsonFile("hosting.json", optional: false, reloadOnChange: true);
+                    builder.AddJsonFile("hosting.json", optional: false, reloadOnChange: true);
                 })
                 .ConfigureServices(delegate(HostBuilderContext context, IServiceCollection serviceCollection)
                 {
@@ -200,7 +203,7 @@ namespace TestApplicationHttps
                                 , Microsoft.AspNetCore.Server.Kestrel.Core.KestrelServerOptions serverOptions)
                             {
                                 // https://codingblast.com/asp-net-core-2-preview/
-                                var logger = serverOptions.ApplicationServices.GetRequiredService<ILogger<Program>>();
+                                ILogger<Program> logger = serverOptions.ApplicationServices.GetRequiredService<ILogger<Program>>();
                                 
                                 /*
                                 System.Collections.Generic.IEnumerable<IConfigurationSection> sections =
@@ -217,7 +220,16 @@ namespace TestApplicationHttps
                                 // serverOptions.Configure(builderContext.Configuration.GetSection("Kestrel"), reloadOnChange: false);
 
                                 // On Linux, CipherSuitesPolicy can be used to filter TLS handshakes on a per-connection basis:
-                                serverOptions.ConfigureHttpsDefaults(Configuration.Kestrel.Https.HttpsDefaults); // End ConfigureHttpsDefaults 
+                                // serverOptions.ConfigureHttpsDefaults(Configuration.Kestrel.Https.HttpsDefaults); 
+
+                                serverOptions.ConfigureHttpsDefaults(delegate (Microsoft.AspNetCore.Server.Kestrel.Https.HttpsConnectionAdapterOptions listenOptions) 
+                                {
+                                    Configuration.Kestrel.Https.HttpsDefaults(listenOptions, watcher);
+                                });
+
+
+                                serverOptions.ConfigureEndpointDefaults(Configuration.Kestrel.Https.ConfigureEndpointDefaults);
+
 
                                 // serverOptions.Listen(System.Net.IPAddress.Loopback, 5001,
 
@@ -233,36 +245,41 @@ namespace TestApplicationHttps
                                 // serverOptions.ListenLocalhost(5005, opts => opts.UseHttps());
 
 
+
+
+                                /*
                                 serverOptions.ListenAnyIP(5006, delegate (Microsoft.AspNetCore.Server.Kestrel.Core.ListenOptions listenOptions)
                                 {
-#if true // WITH_PROXY
-                                    listenOptions.Use(async (connectionContext, next) =>
-                                    {
-                                        await ProxyProtocol.ProxyProtocol.ProcessAsync(connectionContext, next, logger);
-                                    });
-#endif
+        #if true // WITH_PROXY
+                                    //listenOptions.Use(async (connectionContext, next) =>
+                                    //{
+                                    //    await ProxyProtocol.ProxyProtocol.ProcessAsync(connectionContext, next, logger);
+                                    //});
+        #endif
                                 });
 
 
                                 serverOptions.ListenAnyIP(5005,
                                     delegate(Microsoft.AspNetCore.Server.Kestrel.Core.ListenOptions listenOptions)
                                     {
-#if true // WITH_PROXY
-                                        listenOptions.Use( async delegate(
-                                                  Microsoft.AspNetCore.Connections.ConnectionContext connectionContext
-                                                , System.Func<System.Threading.Tasks.Task> next)
-                                        {
-                                            await ProxyProtocol.ProxyProtocol.ProcessAsync(connectionContext, next, logger);
-                                        });
-#endif
+        #if true // WITH_PROXY
+                                        //listenOptions.Use( async delegate(
+                                        //          Microsoft.AspNetCore.Connections.ConnectionContext connectionContext
+                                        //        , System.Func<System.Threading.Tasks.Task> next)
+                                        //{
+                                        //    await ProxyProtocol.ProxyProtocol.ProcessAsync(connectionContext, next, logger);
+                                        //});
+        #endif
 
                                         Configuration.Kestrel.Https.ListenAnyIP(listenOptions, watcher);
                                     }
                                 ); // End ListenAnyIp 
+                                */
                             }
+
                         ); // End ConfigureKestrel 
 #endif
-
+                        
 
                         // http://localhost:5000      {scheme}://{loopbackAddress}:{port}
                         // http://192.168.8.31:5005   {scheme}://{IPAddress}:{port}
@@ -285,13 +302,16 @@ namespace TestApplicationHttps
                         // https://developers.redhat.com/blog/2018/07/24/improv-net-core-kestrel-performance-linux/
                         webBuilder.UseLinuxTransport();
 
+
+                        webBuilder.UseUrls();
+
+
                         if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime
                             .InteropServices.OSPlatform.Windows))
                         {
                             webBuilder.UseIISIntegration();
                         }
                         else webBuilder.UseKestrel();
-
 
                         webBuilder.UseStartup<Startup>()
                             // .UseApplicationInsights()

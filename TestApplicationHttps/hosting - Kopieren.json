@@ -1,0 +1,36 @@
+{
+  "Kestrel": {
+    "Endpoints": {
+      "Http": [ "http://*:5000", "http://localhost:5000", "http://machinename:5000" ],
+      "Https": [
+        {
+          "Url": "https://*:5005",
+          "CertificateFile": null,
+          "CertificateKey": null,
+          "CertificateRegistryEntry": "ssl_cert",
+          "CertificateKeyRegistryEntry": "ssl_key",
+          "AesKey": null,
+          "AesIV": null
+        },
+        {
+          "Url": "https://*:5006",
+          "CertificateFile": null,
+          "CertificateKey": null,
+          "CertificateRegistryEntry": "ssl_cert",
+          "CertificateKeyRegistryEntry": "ssl_key",
+          "AesKey": null,
+          "AesIV": null
+        }
+      ]
+    }
+  },
+
+
+  "OldKestrel": {
+    "EndPoints": {
+      "Http": {
+        "Url": "http://localhost:5555"
+      }
+    }
+  }
+}
