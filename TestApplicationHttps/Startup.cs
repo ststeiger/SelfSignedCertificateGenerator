@@ -93,6 +93,9 @@ namespace TestApplicationHttps
             });
 
 
+            app.UseMiddleware<LetsEncryptChallengeApprovalMiddleware>();
+
+
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
