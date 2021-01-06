@@ -18,8 +18,17 @@ namespace TestApplicationHttps
     {
 
         private const string MagicPrefix = "/.well-known/acme-challenge";
-        private static readonly Microsoft.AspNetCore.Http.PathString MagicPrefixSegments = 
-            new Microsoft.AspNetCore.Http.PathString(MagicPrefix);
+        private static readonly int s_lenMagicPrefix;
+
+        private static readonly Microsoft.AspNetCore.Http.PathString s_acmePrefixSegments;
+
+
+        static LetsEncryptChallengeApprovalMiddleware()
+        {
+            s_lenMagicPrefix =  MagicPrefix.Length;
+            s_acmePrefixSegments = new Microsoft.AspNetCore.Http.PathString(MagicPrefix);
+        }
+
 
         private readonly Microsoft.AspNetCore.Http.RequestDelegate _next;
         private readonly Microsoft.Extensions.Logging.ILogger<LetsEncryptChallengeApprovalMiddleware> _logger;
@@ -38,7 +47,7 @@ namespace TestApplicationHttps
 
         public async System.Threading.Tasks.Task InvokeAsync(Microsoft.AspNetCore.Http.HttpContext context)
         {
-            if (context.Request.Path.StartsWithSegments(MagicPrefixSegments))
+            if (context.Request.Path.StartsWithSegments(s_acmePrefixSegments))
             {
                 try
                 {
@@ -82,7 +91,7 @@ namespace TestApplicationHttps
             MatchingChallenge[] allChallenges = new MatchingChallenge[] { new MatchingChallenge() };
             MatchingChallenge matchingChallenge = null;
 
-            if (path.Length > MagicPrefix.Length)
+            if (path.Length > s_lenMagicPrefix)
             {
                 string requestedToken = path.Substring($"{MagicPrefix}/".Length);
 
@@ -113,7 +122,7 @@ namespace TestApplicationHttps
                 return;
             } // End if (matchingChallenge == null) 
 
-            // token response is always in ASCII so char count would be equal to byte count here
+            // token response is always in ASCII so char_count would be equal to byte_count here
             context.Response.StatusCode = (int) System.Net.HttpStatusCode.OK;
             context.Response.ContentLength = matchingChallenge.Response.Length;
             // context.Response.ContentType = "application/octet-stream";
