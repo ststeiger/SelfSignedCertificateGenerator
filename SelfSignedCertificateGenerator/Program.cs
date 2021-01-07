@@ -176,6 +176,8 @@ https://example.int/TestApplicationHttps
                 , new Org.BouncyCastle.Pkcs.X509CertificateEntry[] { certEntry }
             );
 
+
+            
             using (System.IO.MemoryStream stream = new System.IO.MemoryStream())
             {
                 // Cert is contained in store
@@ -183,7 +185,7 @@ https://example.int/TestApplicationHttps
                 // note: Linux needs empty password on null...
                 store.Save(stream, password == null ? "".ToCharArray() : password.ToCharArray(), new Org.BouncyCastle.Security.SecureRandom());
                 // stream.Position = 0;
-                pfxBytes = stream.ToArray();
+                pfxBytes = Org.BouncyCastle.Pkcs.Pkcs12Utilities.ConvertToDefiniteLength(stream.ToArray());
             } // End Using stream 
 
             return pfxBytes;
