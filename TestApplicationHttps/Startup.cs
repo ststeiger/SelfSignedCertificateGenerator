@@ -55,7 +55,7 @@ namespace TestApplicationHttps
                 if (System.Environment.GetEnvironmentVariable("APP_POOL_ID") is string)
                     useKestrel = false;
 
-                options.RedirectStatusCode = StatusCodes.Status308PermanentRedirect;
+                options.RedirectStatusCode = Microsoft.AspNetCore.Http.StatusCodes.Status308PermanentRedirect;
 
                 if (useKestrel || !System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows))
                 {

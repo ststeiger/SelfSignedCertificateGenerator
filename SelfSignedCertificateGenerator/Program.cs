@@ -107,14 +107,123 @@ https://example.int/TestApplicationHttps
         public static async System.Threading.Tasks.Task Main(string[] args)
         {
             // CreateSslCertificate();
-            SetRegistry();
+            // SetRegistry();
             // SelfSignedCertificateGenerator.Test.MonitoringTest.TestMonitorChanges();
+
+            string pemKey = SecretManager.GetSecret<string>("skynet_key");
+            string pemCert = SecretManager.GetSecret<string>("skynet_cert");
+
+
+            Org.BouncyCastle.Crypto.AsymmetricCipherKeyPair rootKey = ReadAsymmetricKeyParameter(pemKey);
+            System.Console.WriteLine(rootKey.Private);
+
+            Org.BouncyCastle.X509.X509Certificate rootCert = PemStringToX509(pemCert);
+            System.Console.WriteLine(rootCert);
+
+            Org.BouncyCastle.Security.SecureRandom random = new Org.BouncyCastle.Security.SecureRandom(NonBackdooredPrng.Create());
+            Org.BouncyCastle.Crypto.AsymmetricCipherKeyPair certKeyPair = KeyGenerator.GenerateRsaKeyPair(2048, random);
+
+            Org.BouncyCastle.X509.X509Certificate sslCertificate = SelfSignSslCertificate(
+                  random
+                , rootCert
+                , certKeyPair.Public
+                , rootKey.Private
+            );
+
+            bool val = CerGenerator.ValidateSelfSignedCert(sslCertificate, rootCert.GetPublicKey());
+            if (val == false)
+                throw new System.InvalidOperationException("SSL certificate does NOT validate successfully.");
+
+
+            CreatePfxBytes(sslCertificate, certKeyPair.Private, "");
 
             System.Console.WriteLine(" --- Press any key to continue --- ");
             System.Console.ReadKey();
 
             await System.Threading.Tasks.Task.CompletedTask;
         }
+
+
+        public static byte[] CreatePfxBytes(
+              Org.BouncyCastle.X509.X509Certificate certificate
+            , Org.BouncyCastle.Crypto.AsymmetricKeyParameter privateKey
+            , string password = "")
+        {
+            byte[] pfxBytes = null;
+
+            // create certificate entry
+            Org.BouncyCastle.Pkcs.X509CertificateEntry certEntry =
+                new Org.BouncyCastle.Pkcs.X509CertificateEntry(certificate);
+
+            Org.BouncyCastle.Asn1.X509.X509Name name = new Org.BouncyCastle.Asn1.X509.X509Name(certificate.SubjectDN.ToString());
+            string friendlyName = (string)name.GetValueList(Org.BouncyCastle.Asn1.X509.X509Name.O)[0];
+
+            if (System.StringComparer.InvariantCultureIgnoreCase.Equals("Skynet Earth Inc.", friendlyName))
+                friendlyName = "Skynet Certification Authority";
+
+            Org.BouncyCastle.Pkcs.Pkcs12StoreBuilder builder = new Org.BouncyCastle.Pkcs.Pkcs12StoreBuilder();
+            builder.SetUseDerEncoding(true);
+
+
+            Org.BouncyCastle.Pkcs.Pkcs12Store store = builder.Build();
+
+            store.SetCertificateEntry(friendlyName, certEntry);
+
+            // create store entry
+            store.SetKeyEntry(
+                  friendlyName
+                , new Org.BouncyCastle.Pkcs.AsymmetricKeyEntry(privateKey)
+                , new Org.BouncyCastle.Pkcs.X509CertificateEntry[] { certEntry }
+            );
+
+            using (System.IO.MemoryStream stream = new System.IO.MemoryStream())
+            {
+                // Cert is contained in store
+                // null: no password, "": an empty passwords
+                // note: Linux needs empty password on null...
+                store.Save(stream, password == null ? "".ToCharArray() : password.ToCharArray(), new Org.BouncyCastle.Security.SecureRandom());
+                // stream.Position = 0;
+                pfxBytes = stream.ToArray();
+            } // End Using stream 
+
+            return pfxBytes;
+        } // End Function CreatePfxBytes 
+
+
+        public static Org.BouncyCastle.X509.X509Certificate PemStringToX509(string pemString)
+        {
+            Org.BouncyCastle.X509.X509Certificate cert = null;
+            Org.BouncyCastle.X509.X509CertificateParser kpp = new Org.BouncyCastle.X509.X509CertificateParser();
+
+            using (System.IO.Stream pemStream = new StringStream(pemString))
+            {
+                cert = kpp.ReadCertificate(pemStream);
+            } // End Using pemStream 
+
+            return cert;
+        } // End Function PemStringToX509 
+
+
+        public static Org.BouncyCastle.Crypto.AsymmetricCipherKeyPair ReadAsymmetricKeyParameter(System.IO.TextReader textReader)
+        {
+            Org.BouncyCastle.OpenSsl.PemReader pemReader = new Org.BouncyCastle.OpenSsl.PemReader(textReader);
+            Org.BouncyCastle.Crypto.AsymmetricCipherKeyPair KeyParameter = (Org.BouncyCastle.Crypto.AsymmetricCipherKeyPair)pemReader.ReadObject();
+            return KeyParameter;
+        } // End Function ReadAsymmetricKeyParameter 
+
+
+        public static Org.BouncyCastle.Crypto.AsymmetricCipherKeyPair ReadAsymmetricKeyParameter(string pemString)
+        {
+            Org.BouncyCastle.Crypto.AsymmetricCipherKeyPair para = null;
+
+            using (System.IO.TextReader tr = new System.IO.StringReader(pemString))
+            {
+                para = ReadAsymmetricKeyParameter(tr);
+            } // End Using tr 
+
+            return para;
+        } // End Function ReadAsymmetricKeyParameter 
+
 
 
         public static void SetRegistry()
@@ -203,7 +312,7 @@ https://example.int/TestApplicationHttps
             // Org.BouncyCastle.Crypto.AsymmetricCipherKeyPair certKeyPair = KeyGenerator.GenerateDHKeyPair(1024, random);
             // Org.BouncyCastle.Crypto.AsymmetricCipherKeyPair certKeyPair = KeyGenerator.GenerateGostKeyPair(4096, random);
 
-            
+
 
             Org.BouncyCastle.X509.X509Certificate sslCertificate = SelfSignSslCertificate(random, pfx.Certificate, certKeyPair.Public, pfx.PrivateKey);
 
